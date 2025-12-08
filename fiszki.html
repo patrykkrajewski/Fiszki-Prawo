@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiszki - Prawo Własności</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --bg-color: #eef2f3;
+            --card-bg: #ffffff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.8rem;
+        }
+
+        /* Kontener fiszki */
+        .flashcard-container {
+            perspective: 1000px;
+            width: 700px;
+            max-width: 95vw;
+            height: 450px;
+            cursor: pointer;
+            margin-bottom: 30px;
+        }
+
+        /* Sama fiszka */
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-radius: 15px;
+        }
+
+        /* Klasa dodawana przy obrocie */
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        /* Przód i tył */
+        .front, .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            box-sizing: border-box;
+            background-color: var(--card-bg);
+            text-align: center;
+            overflow-y: auto;
+        }
+
+        .front {
+            color: var(--primary-color);
+            border-bottom: 5px solid var(--secondary-color);
+        }
+
+        .front h2 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .hint {
+            font-size: 0.9rem;
+            color: #95a5a6;
+            margin-top: 20px;
+            font-style: italic;
+        }
+
+        .back {
+            background-color: var(--primary-color);
+            color: #fff;
+            transform: rotateY(180deg);
+            align-items: flex-start; /* Tekst od lewej */
+            text-align: left;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .back-content {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto; /* Scrollowanie dla długich tekstów */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Sterowanie */
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--secondary-color);
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #counter {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            min-width: 80px;
+            text-align: center;
+        }
+
+        /* Responsywność */
+        @media (max-width: 600px) {
+            .flashcard-container {
+                height: 500px; /* Wyższe karty na mobilkach dla długich tekstów */
+            }
+            .front h2 { font-size: 1.1rem; }
+            .back { font-size: 0.95rem; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Pytania na Prawo własności</h1>
+
+    <div class="flashcard-container" onclick="flipCard()">
+        <div class="flashcard" id="card">
+            <div class="front">
+                <h2 id="question-text">Ładowanie...</h2>
+                <div class="hint">(Kliknij kartę, aby zobaczyć odpowiedź)</div>
+            </div>
+            <div class="back">
+                <div class="back-content" id="answer-text">
+                    Ładowanie...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="prevCard(event)" id="btn-prev">Poprzednia</button>
+        <span id="counter">1 / 16</span>
+        <button onclick="nextCard(event)" id="btn-next">Następna</button>
+    </div>
+    <div style="margin-top: 20px;">
+        <button onclick="shuffleDeck()" style="background-color: #27ae60;">Losuj kolejność</button>
+    </div>
+
+    <script>
+        // Treść dokładnie przepisana z pliku PDF
+        const originalData = [
+            {
+                question: "1. Wymienić i krótko wyjaśnić uprawnienia wynikające z prawa własności (triada uprawnień właściciela)",
+                answer: "a. Prawo do posiadania - nikt nie ma prawa nam tego odebrać<br>b. Prawo do korzystania - Możemy korzystać z rzeczy w dowolny sposób, jaki nam odpowiada<br>c. Prawo do rozporządzania - Możemy zdecydować, co się stanie z rzeczą - sprzedać ją, zniszczyć, podarować"
+            },
+            {
+                question: "2. Wyjaśnij pojęcie dobra niematerialne",
+                answer: "a. dobro w obiegu cywilno prawnym które ma postać niematerialną i jest wynikiem twórczego wysiłku umysłu ludzkiego"
+            },
+            {
+                question: "3. Wymienić i opisać dwie podstawowe Konwencje dotyczące praw własności intelektualnej oraz obowiązujące w nich zasady",
+                answer: "a. Konwencja Paryska - o ochronie własności przemysłowej:<br>&nbsp;&nbsp;i. Zasada asymilacji - taka sama ochrona dla obcokrajowców i obywateli kraju<br>&nbsp;&nbsp;ii. Zasada pierwszeństwa - liczy sie kto pierwszy złożył wniosek<br>b. Konwencja Bereńska - o chronie dzieł literackich i artystycznych:<br>&nbsp;&nbsp;i. Zasada asymilacji - (to samo)<br>&nbsp;&nbsp;ii. Zasada minimalnej ochrony - sygnatariusze stosują te same lub bardziejsze zasady co w są opisane w konwencji"
+            },
+            {
+                question: "4. Rozszyfrować skrót WIPO i opisać czym zajmuje się ta organizacja",
+                answer: "a. World Intellectual Property Organization - zajmuje sie zarządzaniem porozumieniami z zakresu własności intelektualnej"
+            },
+            {
+                question: "5. Opisać czego dotyczy dyrektywa unijna potocznie nazywana ACTA2",
+                answer: "a. Dyrektywa o prawach autorskich w rynku cyfrowym. Przykłady (dodatek):<br>&nbsp;&nbsp;i. Art. 15-platformy (google, facebook) płacą za kliknięcia w linki do artykułów prasowych<br>&nbsp;&nbsp;ii. Art. 17-właściciel strony odpowiada za zamieszczone treści"
+            },
+            {
+                question: "6. Opisać podział (zakres) praw własności intelektualnej",
+                answer: "a. Prawa własności przemysłowej<br>&nbsp;&nbsp;i. Wynalazki<br>&nbsp;&nbsp;ii. wzory przemysłowe i użytkowe<br>&nbsp;&nbsp;iii. Znaki towarowe<br>&nbsp;&nbsp;iv. Oznaczenia geograficzne<br>&nbsp;&nbsp;v. Topografie układów scalonych<br>b. Tajemnica przedsiębiorstwa<br>&nbsp;&nbsp;i. Know-how<br>c. Prawa autorskie<br>&nbsp;&nbsp;i. utwory<br>&nbsp;&nbsp;ii. Przedmioty praw pokrewnych"
+            },
+            {
+                question: "7. Na czym polega odrębność ochrony prawno-przemysłowej od prawno-autorskiej",
+                answer: "a. Prawno-przemysłowa - powstaje po dokonaniu formalności we właściwym organie<br>b. Prawno-autorska - powstaje samoczynnie z chwilą ustalenia utworu"
+            },
+            {
+                question: "8. Wymienić i opisać cechy definiujące know-how. Podać definicję know-how",
+                answer: "a. pakiet nieopatentowanych informacji praktycznych wynikających z doświadczeń i badań, które są:<br>&nbsp;&nbsp;i. niejawne - nie są powszechnie znane lub łatwo dostępne<br>&nbsp;&nbsp;ii. istotne ważne i użyteczne do wytwarzania produktów objętych umową<br>&nbsp;&nbsp;iii. zidentyfikowane - opisane wystarczająco aby można było sprawdzić czy spełniają kryteria niejawności i istotności"
+            },
+            {
+                question: "9. Wyjaśnić pojęcie utwór",
+                answer: "a. każdy przejaw działalności twórczej o indywidualnym charakterze, ustalony w jakiejkolwiek postaci, niezależnie od wartości, przeznaczenia i sposobu wyrażenia"
+            },
+            {
+                question: "10. Wymienić i opisać rodzaje praw autorskich",
+                answer: "a. OSOBISTE PRAWA AUTORSKIE zawsze przysługują twórcy, chronią więź twórcy z utworem. Są niezbywalne, nie można się ich zrzec. Nie są ograniczone czasowo.<br>b. MAJĄTKOWE PRAWA AUTORSKIE z zasady przysługują twórcy (WYJĄTKI) mają charakter zbywalny i są dziedziczone. Trwają 70 lat od śmierci twórcy (liczone od i do 1 stycznia). Potem definitywnie gasną."
+            },
+            {
+                question: "11. Opisać pojęcie dozwolonego użytku",
+                answer: "a. DOZWOLONY UŻYTEK stanowi wyjątek od ogólnych zasad ochrony prawa autorskiego. W ściśle określonych sytuacjach i pod ściśle określonymi earunkami, umożliwia korzystanie z już rozpowszechnionego utworu bez konieczności uzyskiwania zgody autora."
+            },
+            {
+                question: "12. Wyjaśnić pojęcie plagiat",
+                answer: "a. Przypisanie sobie autorstwa do cudzego utworu"
+            },
+            {
+                question: "13. Wymienić dobra niematerialne przemysłowe",
+                answer: "a. wynalazków<br>b. wzorów użytkowych<br>c. wzorów przemysłowych<br>d. znaków towarowych (łączy produkt z producentem)<br>e. oznaczeń geograficznych (produkty z konkretnego regionu - rogale świętomarcińskie tylko w poznaniu)<br>f. topografii układów scalonych<br>g. (projektów racjonalizatorskich)"
+            },
+            {
+                question: "14. Wynalazek to...",
+                answer: "a. to wytwór ludzkiego umysłu będący technicznym rozwiązaniem dowolnego problemu"
+            },
+            {
+                question: "15. Wyjaśnić i opisać pojęcie „zdolność patentowa”",
+                answer: "a. 3 cechy które musi posiadać rozwiązanie by uzyskać ochronę patentową<br>&nbsp;&nbsp;i. Są nowe (art. 25) w skali światowej, nie są częścią stanu techniki (znane, opisane, przedstawione na wystawie)<br>&nbsp;&nbsp;ii. Posiadające poziom wynalazczy (art. 26) - nie wynikają w sposób oczywisty z istniejącego stanu techniki<br>&nbsp;&nbsp;iii. Nadające się do przemysłowego stosowania (art. 27) - może być stosowany z identycznym skutkiem w sposób powtarzalny"
+            },
+            {
+                question: "16. Wyjaśnić różnice pomiędzy wzorem użytkowym i przemysłowym",
+                answer: "a. Wzór użytkowy - \"mały wynalazek\" - to rozwiązanie techniczne ma być nowe (nie w wiadomości powszechnej) i użyteczne, na 10 lat<br>b. Wzór przemysłowy - nowy i oryginalny, \"posiada indywidulany charakter\" czyli liczy się wygląd, na 5 lat (można przedłużyć kilka razy do max 25 lat). Moda, gadżety, itp.<br><br>Użytkowy = rozwiązanie techniczne (funkcja, jak działa)<br>Przemysłowy = rozwiązanie wizualne (wygląd, jak prezentuje się)"
+            }
+        ];
+
+        let flashcards = [...originalData];
+        let currentIndex = 0;
+        const cardElement = document.getElementById('card');
+        const questionText = document.getElementById('question-text');
+        const answerText = document.getElementById('answer-text');
+        const counter = document.getElementById('counter');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+
+        function updateCardContent() {
+            questionText.innerHTML = flashcards[currentIndex].question;
+            answerText.innerHTML = flashcards[currentIndex].answer;
+            counter.innerText = `${currentIndex + 1} / ${flashcards.length}`;
+            
+            btnPrev.disabled = currentIndex === 0;
+            btnNext.disabled = currentIndex === flashcards.length - 1;
+        }
+
+        function flipCard() {
+            cardElement.classList.toggle('flipped');
+        }
+
+        function nextCard(event) {
+            event.stopPropagation(); // Zapobiega obracaniu karty przy kliknięciu przycisku
+            if (currentIndex < flashcards.length - 1) {
+                // Jeśli karta jest odwrócona, najpierw ją obróć z powrotem, potem zmień treść
+                if (cardElement.classList.contains('flipped')) {
+                    cardElement.classList.remove('flipped');
+                    setTimeout(() => {
+                        currentIndex++;
+                        updateCardContent();
+                    }, 300); // Czas połowy animacji
+                } else {
+                    currentIndex++;
+                    updateCardContent();
+                }
+            }
+        }
+
+        function prevCard(event) {
+            event.stopPropagation();
+            if (currentIndex > 0) {
+                if (cardElement.classList.contains('flipped')) {
+                    cardElement.classList.remove('flipped');
+                    setTimeout(() => {
+                        currentIndex--;
+                        updateCardContent();
+                    }, 300);
+                } else {
+                    currentIndex--;
+                    updateCardContent();
+                }
+            }
+        }
+
+        function shuffleDeck() {
+            // Algorytm Fishera-Yatesa
+            for (let i = flashcards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [flashcards[i], flashcards[j]] = [flashcards[j], flashcards[i]];
+            }
+            // Reset do pierwszej karty
+            currentIndex = 0;
+            if (cardElement.classList.contains('flipped')) {
+                cardElement.classList.remove('flipped');
+                setTimeout(updateCardContent, 300);
+            } else {
+                updateCardContent();
+            }
+        }
+
+        // Inicjalizacja
+        updateCardContent();
+
+        // Obsługa klawiatury
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextCard(e);
+            if (e.key === 'ArrowLeft') prevCard(e);
+            if (e.key === ' ' || e.key === 'Enter') flipCard();
+        });
+
+    </script>
+</body>
+</html>
