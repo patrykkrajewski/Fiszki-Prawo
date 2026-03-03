@@ -3,350 +3,762 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pełna Baza Fiszek - Obrona Pracy</title>
+    <title>Fiszki - Obrona Inżynierska</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
-            margin: 0;
         }
-        h1 { color: #333; }
-        .controls {
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .dashboard {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            background-color: #007BFF;
-            color: white;
-            transition: background-color 0.3s;
-        }
-        button:hover { background-color: #0056b3; }
-        button.active-toggle { background-color: #dc3545; }
-        button:disabled { background-color: #cccccc; cursor: not-allowed; }
-        
-        .flashcard-container {
             width: 100%;
-            max-width: 800px;
-            height: 450px;
-            perspective: 1000px; /* Wymuszenie perspektywy 3D */
-            margin-bottom: 20px;
+            max-width: 700px;
+            box-sizing: border-box;
         }
+        .stats-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .stat-box {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            flex: 1;
+            text-align: center;
+            min-width: 120px;
+        }
+        .stat-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #2980b9;
+        }
+        .stat-box p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .text-green { color: #27ae60; font-weight: bold; }
+        .text-red { color: #c0392b; font-weight: bold; }
         
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        select, button, label {
+            font-size: 16px;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #bdc3c7;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            background: #f9f9f9;
+        }
+        .checkbox-group input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .btn-start {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .btn-start:hover { background: #2980b9; }
+        .btn-reset {
+            background: #ecf0f1;
+            color: #7f8c8d;
+            border: 1px solid #bdc3c7;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 14px;
+            padding: 8px;
+        }
+        .btn-reset:hover { background: #e74c3c; color: white; border-color: #e74c3c; }
+
+        /* Sekcja Fiszek */
+        .progress-text {
+            text-align: center;
+            font-weight: bold;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            font-size: 18px;
+            display: none;
+        }
+        .flashcard-wrapper {
+            display: none;
+            width: 100%;
+            max-width: 700px;
+            perspective: 1000px;
+            margin-bottom: 25px;
+        }
         .flashcard {
             width: 100%;
-            height: 100%;
+            min-height: 400px;
             position: relative;
-            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
-            transform-style: preserve-3d; /* Zachowanie przestrzeni 3D dla dzieci */
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
             cursor: pointer;
         }
-        
-        .flashcard.flipped { transform: rotateY(180deg); }
-        
-        /* Główne ściany karty - żadnych suwaków tutaj! */
-        .flashcard-face {
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+        .card-face {
             position: absolute;
             width: 100%;
             height: 100%;
-            -webkit-backface-visibility: hidden; /* Fix dla Chrome/Safari */
             backface-visibility: hidden;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        
-        .flashcard-front {
-            background-color: #ffffff;
-            color: #333;
-            border: 2px solid #007BFF;
-            z-index: 2; /* Przód zawsze wyżej przed obrotem */
-        }
-        
-        .flashcard-back {
-            background-color: #007BFF;
-            color: #ffffff;
-            transform: rotateY(180deg);
-            z-index: 1;
-        }
-
-        /* Wewnętrzny pojemnik na tekst - to on jest przewijany */
-        .card-content {
-            width: 100%;
-            height: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
             padding: 30px;
             box-sizing: border-box;
-            overflow-y: auto; /* Suwak dla długich odpowiedzi JEDYNIE w środku */
-            border-radius: 10px; /* Dopasowanie do karty */
-        }
-
-        #cardFront {
             display: flex;
-            align-items: center;
+            flex-direction: column;
             justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
+            align-items: center;
+            overflow-y: auto;
+        }
+        .card-front {
+            color: #2c3e50;
             text-align: center;
         }
-
-        #cardBack {
-            font-size: 18px;
+        .card-front h2 { font-size: 24px; line-height: 1.4; }
+        .card-back {
+            background: #fdfefe;
+            transform: rotateY(180deg);
+            color: #34495e;
+            justify-content: flex-start;
             text-align: left;
-            line-height: 1.6;
         }
+        .card-back p { line-height: 1.6; margin-bottom: 10px; width: 100%; font-size: 16px; }
 
-        .status-container {
-            display: flex;
-            align-items: center;
+        .action-buttons {
+            display: none;
+            width: 100%;
+            max-width: 700px;
+            justify-content: space-between;
             gap: 15px;
-            margin-bottom: 20px;
-            background: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        .counter { font-weight: bold; color: #555; font-size: 18px; }
-        input[type="checkbox"] { transform: scale(1.5); cursor: pointer; margin-right: 5px;}
-        label { font-size: 16px; cursor: pointer; font-weight: bold; }
-        ul { margin: 10px 0; padding-left: 20px; }
+        .btn-know { background: #2ecc71; color: white; flex: 1; padding: 15px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;}
+        .btn-know:hover { background: #27ae60; }
+        .btn-dont-know { background: #e74c3c; color: white; flex: 1; padding: 15px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;}
+        .btn-dont-know:hover { background: #c0392b; }
+        
+        .btn-back-home {
+            display: none;
+            background: #95a5a6;
+            color: white;
+            width: 100%;
+            max-width: 700px;
+            margin-top: 15px;
+            padding: 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-back-home:hover { background: #7f8c8d; }
     </style>
 </head>
 <body>
 
-    <h1>Pełna Baza Fiszek - Egzamin Dyplomowy</h1>
+    <h1>🎓 Obrona Inżynierska - Fiszki</h1>
 
-    <div class="controls">
-        <button id="toggleModeBtn" onclick="toggleMode()">Tryb: Wszystkie pytania</button>
-    </div>
-
-    <div class="status-container">
-        <span class="counter" id="counterDisplay">1 / 10</span>
-        <label>
-            <input type="checkbox" id="difficultCheckbox" onchange="toggleDifficult()"> 
-            Nie potrafię tego (powtarzaj w trybie trudnych)
-        </label>
-    </div>
-
-    <div class="flashcard-container" onclick="flipCard()">
-        <div class="flashcard" id="flashcard">
-            <div class="flashcard-face flashcard-front">
-                <div class="card-content" id="cardFront">Pytanie</div>
+    <div class="dashboard" id="dashboard">
+        <h2 style="margin-top: 0; text-align: center; color: #34495e;">Twoje Statystyki</h2>
+        <div class="stats-container" id="statsContainer">
             </div>
+
+        <div class="controls">
+            <select id="prioritySelect">
+                <option value="all">Wszystkie Priorytety</option>
+                <option value="1">Tylko Priorytet 1</option>
+                <option value="2">Tylko Priorytet 2</option>
+                <option value="3">Tylko Priorytet 3</option>
+            </select>
             
-            <div class="flashcard-face flashcard-back">
-                <div class="card-content" id="cardBack">Odpowiedź</div>
-            </div>
+            <label class="checkbox-group">
+                <input type="checkbox" id="onlyUnknown">
+                Pomiń pytania, które "Umiem"
+            </label>
+
+            <button class="btn-start" onclick="startLearning()">Rozpocznij naukę</button>
+            <button class="btn-reset" onclick="resetStats()">Resetuj wszystkie statystyki (zacznij od zera)</button>
         </div>
     </div>
 
-    <div class="controls">
-        <button id="prevBtn" onclick="prevCard()">Poprzednie</button>
-        <button id="nextBtn" onclick="nextCard()">Następne</button>
+    <div class="progress-text" id="progressText">Karta 1 / 10</div>
+    
+    <div class="flashcard-wrapper" id="flashcardWrapper" onclick="flipCard()">
+        <div class="flashcard" id="flashcard">
+            <div class="card-face card-front" id="cardFront">
+                </div>
+            <div class="card-face card-back" id="cardBack">
+                </div>
+        </div>
     </div>
 
+    <div class="action-buttons" id="actionButtons">
+        <button class="btn-dont-know" onclick="markCard('unknown', event)">❌ Nie umiem</button>
+        <button class="btn-know" onclick="markCard('known', event)">✅ Umiem</button>
+    </div>
+
+    <button class="btn-back-home" id="btnBackHome" onclick="goHome()">Powrót do menu</button>
+
+    <script id="rawData" type="text/plain">
+Obrona pracy inżynierskiej
+Priorytet 1
+1.  Omówić protokół HTTP
+HTTP (HyperText Transfer Protocol) - protokół warstwy aplikacji działający w modelu klient-serwer (żądanie-odpowiedź), który stanowi fundament komunikacji w sieci WWW oraz definiuje jak informacje (tekst, obrazy) są przesyłane między komputerami nasłuchuje na porcie 80 TCP.
+Opiera się na metodach  GET (pobranie),  POST (wysłanie),  PUT/PATCH (aktualizacja),  DELETE (usuwa)
+2. Budowanie aplikacji WWW w architekturze MVC Wzorzec architektoniczny dzielący aplikacje na 3 części M (Model reprezentujący dane) V (Widok reprezentujący interfejs użytkownika)  C (Kontroler zarządza komunikacją między M a V).
+Ułatwia to separację kodu, testowanie jednostkowe oraz równoległą pracę programistów nad różnymi częściami systemu
+Wykorzystują to Frameworki takie jak np. Laravel Symphony, Spring
+3. Frameworki wspomagające tworzenie aplikacji WWW w technologiach Java
+Przykłady: Jakarta Server Faces i Spring Framework.
+JSF – oparty na MVC i komponentach z których budujemy stronę (Facelets)
+Spring Framework – najpopularniejszy framework Java, wykorzystujący MCV i wstrzykiwanie zależności, rozszerzeniem jest Spring Boot który rozszerza framework o narzędzia wymagane do uruchomienia aplikacji na serwerze Tomcat.
+4. Porównanie struktur danych: stosu, kolejki oraz kolejki priorytetowej
+Stos  – LIFO (ostatni wchodzi pierwszy wychodzi), mamy dostęp tylko do ostatniego elementu np. operacja cofania (undo)
+Kolejka  – FIFO (pierwszy wchodzi pierwszy wychodzi), szybki dostęp do ostatniego elementu np. kolejka zadań w tym drukowanie
+Kolejka Prio  – element o najwyższym priorytecie jest obsługiwany jako pierwszy, niezależnie od tego, kiedy został dodany np.
+szeregowanie zadań
+5. Drzewa poszukiwań binarnych – charakterystyka i sposoby implementacji
+Hierarchiczna struktura drzewa, gdzie każdy węzeł ma co najmniej 2 synów, wartość lewego jest mniejsza od wartości rodzica a prawego większa.
+Złożoność przeszukiwania jest bardzo szybka, chyba że drzewo jest w postaci listy wtedy znacznie spada.
+Implementacja wskaźnikowa (np. w JAVA), tablicowa(kopiec).
+6. Kopce i ich rola w usprawnieniu przetwarzania. Algorytm sortowania kopcowego
+Kopiec  – drzewo binarne, gdzie rodzic jest zawsze większy lub mniejszy od dziecka
+Rola : Błyskawiczny dostęp do najmniejszego/największego elementu (kluczowe dla np. koleje prio)
+Algorytm : Najpierw buduje kopiec, a potem sukcesywnie wyciąga ze szczytu największy element i kładzie go na koniec tablicy.
+7. Omówić istotę dziedziczenia
+Tworzymy nowe klasy na bazie istniejących, rozszerzając ich funkcjonalności. Jest to dobra prakryt a ponieważ trzymamy się zasady DIR (Don’t Repeat Yourself).
+8. Omówić istotę polimorfizmu metod
+Ta sama metoda wykonuje różne akcje w zależności od obiektu.
+Statyczna – ta sama metoda inne argumenty
+Dynamiczna – nadpisujemy klasę bazową
+9. Architektura wybranej usługi w sieci TCP/IP
+HTTP (HyperText Transfer Protocol ) - protokół warstwy aplikacji działający w modelu klient-serwer (żądanie-odpowiedź), który stanowi fundament komunikacji w sieci WWW oraz definiuje jak informacje (tekst, obrazy) są przesyłane między komputerami nasłuchuje na porcie 80 TCP.
+Opiera się na metodach  GET (pobranie),  POST (wysłanie),  PUT/PATCH (aktualizacja),  DELETE (usuwa)
+10. Na czym polega normalizacja w relacyjnych bazach danych. Dlaczego jest ważna?
+Normalizacja  to proces porządkowania relacyjnej bazy danych, który polega na podziale tabel na mniejsze i połączenie ich relacją.
+Jest ważna , ponieważ eliminuje redundancje (nadmiarowość danych) oraz anomalie (błędy niespójności podczas dodawania/edycji/usuwania wierszy)
+11. Opisać relacyjny model danych
+Zapis informacji w postaci dwuwymiarowych tabel, składających się z wierszy (wartości) i kolumn (atrybutów).
+Tabele te są połączone relacją (klucz obcy i podstawowy). Zapewnia to eliminacje redundancji i anomalii.
+12. Omówić język programowania SQL
+Structured Query Language - Język zapytań używany do zarządzania, manipulowania i pobierania danych z relacyjnych baz danych.
+Podstawowymi komendami w nim są CREATE, ALTER, DROP, SELECT, INSERT, UPDATE, DELETE. Kluczowy dla baz danych takich jak MySQL, PostrgeSQL.
+Priorytet 2
+13. Omówić technologie ASP.NET
+Framework WWW stworzony przez firmę Microsoft Corporation. Wykorzystuje się go do pisania usług i aplikacji internetowych z wykorzystaniem wzorca MVC.
+Podstawa jest język C# ale ASP .NET umożliwia też dynamiczne tworzenie stron poprzez CSHTML czy Razor który łączy C# i HTML.
+14. Selektory: proste, uniwersalne,  „potomka” , „dziecka”,  „rodzeństwa”,  pseudoklasy, pseudoelementy.
+Selektory są wykorzystywane w kaskadowym arkuszy styli do dokładnej do identyfikacji elementu w strukturze strony( głównie znaczniki).
+Uniwersalne  – „*” wszystkie elementy na stronie np. * { margin: 0; }
+Proste  – elementy danego rodzaju: typu (akapit „p”), klasy (kropka), id (#)
+Potomka  - gdziekolwiek wewnątrz div p { color: green; }
+Dziecka  – bezpośrednio wewnątrz  div > p { color: yellow; }
+Rodzeństwo  – zaraz za innym elementem h1 + p { font-weight: bold; }
+Pseudoklasy  - konkretny stan lub sytuacja :hover (najedziesz myszą)
+Pseudoelementy  – nie ma w kodzie HTML ::after (wstawić coś po zawartości)
+15. DOM: współpraca z przeglądarką (obiekty główne przeglądarki, obiekt window, document, history,  location, navigator) i dostęp do elementów witryny.
+DOM  (Document Object Model) – obiektowa reprezentacja strony wygenerowana przez silnik przeglądarki w postaci odwróconego drzewa, który składa się z węzłów na których można wykonywać operacje.
+Window – osobny dla każdego okna przeglądarki
+Document – modelem HTML
+History – historia przeglądanych URL
+Location – obecny adres URL
+Navigator – informacje o przeglądarce
+16. Słuchacze w aplikacjach mobilnych.
+Słuchacze  to metody służące do asynchronicznej obsługi zdarzeń interfejsu użytkownika, takich jak kliknięcia czy gesty.
+Przykładowo deklarujemy słuchacza na przycisku i gdy zostanie on aktywowany słuchacz wywołuje zdeklarowaną w nim metodę np. która wyśle formularz.
+17. Rola intencji w aplikacjach mobilnych.
+Intencja to obiekt, który używamy, gdy chcemy zażądać działania od innego komponentu.
+Jawne – wywołują element wewnątrz aplikacji np. nowy ekran
+Niejawne - ogólna akcja system, nie wskazujemy komponentu tylko system sam to robi (np. zrobienie zdjęcia)
+18.Na czym polega rekurencja (rekursja)? Przedstaw przykład rekurencyjnej definicji funkcji matematycznej i jej implementacji w wybranym języku programowania.
+Funkcja odwołuje się do samej siebie w celu rozwiązania tego samego tylko mniejszego problemu. Konieczność zdeklarowania warunków brzegowych.
+Definicja matematyczna Implementacja Python
+19.Omówić istotę rekursji.
+Funkcja odwołuje się do samej siebie w celu rozwiązania tego samego tylko mniejszego problemu.
+Konieczność zdeklarowania warunków brzegowych. Przykład silnia.
+20.Czym różni się programowanie niskopoziomowe od wysokopoziomowego?
+Poziomem abstrakcji
+PW można przenosić między platformy PN nie
+PW jeżyk zbliżony do ludzkiego PN język zrozumiały dla komputera
+21.Omówić cele i sposoby uruchamiania aplikacji w trybie krokowym (tzw. trybie debugowania) na przykładzie wybranego środowiska programistycznego.
+Kontrolowane wykonywanie programu (krok po kroku) służy do dynamicznej analizy i pozwala zobaczyć np. wartość zmiennej w konkretnym momencie.
+W Visual Studio realizuje się ja za pomocą breakpoints oraz Step Over, Step Into, Step Out .
+22.Wyjaśnij różnicę między emulacją a wirtualizacją oprogramowania i podaj przykłady.
+Emulacja  naśladowanie działania innego systemu, nie dzieląc zasobów sprzętowych a jedynie korzystając z nich np.
+BlueStacks  (Android na PC)
+Wirtualizacja  polega na wydzieleniu fizycznych zasobów komputera i przypisaniu ich do odizolowanego środowiska np. VirtualBox, Docker
+23.Zarządzanie pamięcią operacyjną - porównanie segmentacji z stronicowaniem.
+Stronicowanie (Podział sprzętowy)  – podział pamięci fizycznej na bloki o równej, z góry określonej wielkości zwane  ramkami  (a pamięci logicznej programu na odpowiadające im  strony ).
+Segmentacja (Podział logiczny)  – dzielimy dane na bloki o zmiennej wielkości, wynikające z naturalnej struktury programu (np. osobny segment na kod, osobny na dane).
+Bloki te nazywamy  segmentami .
+24.Algorytmy szeregowania zadań.
+Kto pierwszy ten lepszy - blokuje krótkie zadania
+Najkrótsze zadanie pierwsze  -najkrótszy czas oczekiwania ale możliwość, zagłodzenia, czyli zadania z długim czasem będą czekać w nieskończoność
+Rotacyjnie  – każde zadanie dostaje równy czas, możliwość straty mocy przez źle dobrany czas
+25.Porównanie technik przewidywania i unikania zakleszczeń.
+Zakleszczenie to krytyczny błąd systemu, gdzie dwa lub więcej procesów czeka na zwolnienie zasobów w nieskończoność.
+Zapobieganie: Polega na narzuceniu systemowi sztywnych reguł, które fizycznie uniemożliwiają zakleszczenie, 100% bezpieczeństwa ale możliwość marnowania zasobów i spadku wydajności.
+Unikanie: System na bieżąco analizuje i przewiduje skutki swoich decyzji, lepsze wykorzystanie sprzętu, ale obciążony procesor
+26.Omówić techniki uwierzytelniania w systemach operacyjnych Unix i Windows.
+Podstawą uwierzytelniania jest hasło użytkownika.
+W unix jest ono szyfrowane i zapisywanie /etc/shadow
+W Windows dla użytkownika też hasło jest szyfrowane i trzymane lokalnie ale dla firm można skorzystać z usługi Active Directory(zarządzanie kontami dla administratora)
+27. Omówić rodzaje chmur obliczeniowych oraz ich zalety i wady
+Prywatna  - udostępnia usługi wyłącznie wewnątrz jednej organizacji
+Zalety: Pełna kontrola i bezpieczeństwo, wysoka wydajność
+Wady: Duży koszt początkowy, Skalowalność, utrzymanie
+Publiczna  – udostępnia usługi w ramach globalnych zasobów
+Zalety: Natychmiastowa skalowalność, małe koszty początkowe
+Wady: Mniejsza kontrola, Powierzanie danych zewnętrznej firmie
+Hybrydowa  – łączy publiczną z prywatną, przenosi dane między nimi
+Zalety: Optymalizacja bezpieczeństwa i kosztów
+Wady: skomplikowana architektura, problemy z kompatybilnością
+Priorytet 3
+28.   Kodowanie według principiów podanych przez Huffmana.
+Algorytm bezstratnej kompresji, polega na budowaniu drzewa binarnego od dołu (łącząc najrzadsze symbole) co pozwala przypisać najkrótsze ciągi bitów najczęściej występującym znakom.
+29.   Wymień przykłady algorytmów sortowania o złożoności obliczeniowej O(n2), O(nlogn) i O(n); Omów wybrany algorytm.
+O(n2) – Sortowanie bąbelkowe
+O(nlogn) – Sortowanie kopcowe, quick sort
+O(n) – sportowanie przez zliczanie, kubełkowe
+Sortowanie kopcowe – z listy tworzony jest kopiec, z użyciem operacji wynurzania i zanurzania.
+30.   Grafy – charakterystyka, rodzaje i sposoby implementacji.
+Graf – zbiór wierzchołków połączonych krawędziami
+Rodzaje: Skierowane, nieskierowane, ważone (koszt na krawędziach)
+Implementacja: Macierz sąsiedztwa, Lista sąsiedztwa
+31.   Algorytmy sortowania o złożoności logarytmicznej. Przykłady, istota.
+Dedykowane dla dużych zbiorów, działają szybko, działają na zasiądzie dziel i zwyciężaj(dzieli problem na mniejsze części i wydojenie się je łączy).
+Sortowanie kopcowe – z listy tworzony jest kopiec, z użyciem operacji wynurzania i zanurzania.
+32.   Wymień trzy wybrane modele cyklu życia systemu i wskaż specyfikę przedsięwzięć dla których dany model należy zastosować.
+Model kaskadowy  (sztywne ramy)- przebiega liniowo faza po fazie, każdy etap musi być zakończony przed przejściem do następnego.
+Powrót jest trudny i kosztowny.
+Model spiralny  (drogich i ryzykownych) - nacisk na analizę ryzyka, Projekt rozwija się w iteracjach gdzie każda z nich jest planowana, oceniane jest ryzyko, budowane prototypy i weryfikowana
+Model zwinny  (innowacyjnych i komercyjnych) – praca podzielona na krótkie cykle po których klient otrzymuje nie pełny fragment aplikacji i dostosowuje na bieżąco kierunek rozwoju
+33.   Wymień role występujące w podejściu SCRUM oraz wskaż główne odpowiedzialności każdej roli.
+Product Owner  – Skupia się na tym  CO  ma być wytworzone aby przyniosło największą wartość na rynku.
+Reprezentuje biznes.
+Scrum Master  - Skupia się na tym,  JAK  zespół pracuje, dbając o płynność działań i zgodność z metodyką Scrum.
+Development Team  - Odpowiadają za dostarczenie w każdym Sprincie gotowego przyrostu produktu o wysokiej jakości, samodzielnie planując sposób wykonania zadań.
+34.   Wyjaśnij różnicę pomiędzy weryfikacją wymagań a walidacją wymagań.
+Weryfikacja  sprawdza zgodność produktu ze specyfikacją techniczną i dokumentacją („czy budujemy produkt właściwie?”).
+Walidacja  sprawdza, czy gotowy produkt spełnia rzeczywiste potrzeby i oczekiwania klienta („czy budujemy właściwy produkt?”)
+35.   Wskaż kiedy warto zastosować prototypowanie podczas analizy i projektowania systemu. Jakie są wady i zalety takiego podejścia?
+Prototypowanie  – proces tworzenia wczesnego uproszczonego modelu oprogramowania, który służy do przetestowania założeń.
+Kiedy : niejasne wymagania, skomplikowany interfejs, trudność w komunikacji
+Zalety : wczesna walidacja, ograniczenie ryzyka, poprawa jakości
+Wady : Czas i koszty początkowe, złudzenie gotowego produktu
+36.   Cechy map bitowych.
+Bit mapa – grafika rastrowa, obraz zapisany w 2 wymiarowej siatce pikseli.
+Cechy: Budowa z pikseli , brak skalowalności, Realizm, Duża waga plików. Format np. PNG
+37.   Charakterystyka obiektów prymitywnych w grafice wektorowej.
+Podstawowe, niepodzielne elementy budujące grafiki wektorowe np. odcinki, wielokąty, krzywe czy tekst.
+Charakteryzują się tym że są opisane za pomocą równań matematycznych.
+Cechy: nieskończona skalowalność bez utraty jakości, nie zajmują dużo miejsca na dysku. Format np. SVG
+38.   Modele „sprzętowe” barwy w grafice komputerowe.
+Modele wynikają z fizyki urządzeń. Model RGB (RED, GREEN, BLUE) – model wykorzystywany przez monitory.
+Model CMYK (Cyan, Magenta, Yellow, Key) – model wykorzystywany przez drukarki
+39.   Modele e-biznesu i ich charakterystyka.
+B2B  (Business-to-Business) to transakcje między firmami
+B2C  (Business-to-Consumer) to sprzedaż detaliczna klientowi końcowemu
+C2C  (Consumer-to-Consumer) obejmuje wymianę handlową między konsumentami, np. na portalach aukcyjnych
+40. Metody i narzędzia e-marketingu.
+Metody :
+SEO – pozycjonowanie strony w przeglądarce
+Wysyłanie spersonalizowanych maili
+Narzędzia :
+Platformy reklamowe np. Google Ads
+Narzędzia analityczne – analizujące ruch na stronie np. Google Analytics
+Kampanie reklamowe wykorzystujące metody np. Relamy PPC (płacenie za kliknięcia użytkownika)
+41.   Podać zapis wybranego algorytmu ewolucyjnego oraz scharakteryzować jego poszczególne składowe  funkcjonalne.
+Algorytm genetyczny – metoda optymalizacji inspirowana ewolucją.
+Zapis: Inicjacja populacji -> Funkcja przystosowania -> Pętla (Selekcja->Krzyżowanie->Mutacja->Funkcja przystosowania->Sukcesja)->Zwrócenie najlepszego.
+Funkcja przystosowania – ocenia jak dobre jest rozwiązanie
+Selekcja – np. turniejowa, ruletka wybiera najlepsze ale z małą szansą czasami słabsze żeby była różnorodność.
+Krzyżowanie – szukanie lepszych kombinacji
+Mutacja – losowa zamiana, unikanie minimum lokalnego
+42.   Porównaj algorytmy: przeszukiwania lokalnego, symulowanego wyżarzania oraz przeszukiwania z tabu.
+Wszystkie należą do grupy algorytmów heurystycznych (szybkość kosztem dokładności).
+Przeszukiwanie lokalne  – Algorytm "zachłanny". Akceptuje tylko lepsze rozwiązania. Zawsze wybiera ruch poprawiający wynik.
+Wada: bardzo łatwo i trwale utyka w optimum lokalnym.
+Symulowane wyżarzanie  – Podejście stochastyczne (losowe). Pozwala na przejście do gorszego rozwiązania na podstawie pewnego  prawdopodobieństwa , które maleje z czasem (imitacja procesu stygnięcia metalu).
+Pozwala to "wyskoczyć" z optimum lokalnego.
+Przeszukiwanie z tabu  – Podejście deterministyczne z historią. Gdy nie ma już lepszych rozwiązań w sąsiedztwie, algorytm wybiera rozwiązanie  najmniej złe , ale dzięki liście tabu ma zablokowaną drogę powrotną do punktu, z którego przed chwilą wyszedł
+43.   Scharakteryzuj grupę algorytmów inspirowanych naturą.
+Algorytmy inspirowane naturą, w celu efektywnego znajdowania przybliżonych rozwiązań najtrudniejszych problemów obliczeniowych. Przykład to algorytm genetyczny albo algorytm mrówkowy.
+44.   Omówić protokół   MQTT.
+Lekki protokół (nie obciąża sieci) w warstwie aplikacji oparty na wzorcu publikacja-subskrypcja obsługiwany przez brokera. Standard komunikacji w IoT np.
+podczas zbierania danych z czujników.
+45.   Porównanie architektur procesorów CISC i RISC.
+CISC – stawia na rozbudowany sprzęt, w którym jedna instrukcja potrafi wykonać wiele operacji, co pozwala pisać krótsze programy kosztem dłuższego wykonywania pojedynczego rozkazu
+RISC – stawia na zoptymalizowane oprogramowanie, wykorzystuje tylko proste instrukcje na rejestrach wykonywane błyskawicznie w jednym cyklu zegar co zapewnia energooszczędność i efektywność.
+46.   Porównanie modeli sieciowych ISO/OSI i TCP/IP.
+ISO/OSI  – 7 warstw (aplikacji, prezentacji, sesji, transportu, sieci, łącza danych, fizyczna), model teoretyczny, precyzyjny opis sieci
+TCP/IP  – 4 warstwy (aplikacji, transportu, internetowa, dostępu do sieci), model praktyczny, jest uproszczony i skupia się na konkretnych protokołach komunikacyjnych IP, TCP
+47. Porównanie protokołu IPv4 z IPv6.
+Działają w warstwie sieciowej, ich celem jest zapewnienie komunikacji między urządzeniami w sieci.
+IPv4 – 32 bity, zapis dziesiętny, zmienna długość
+IPv6 – 128bitów, zapis szesnastkowy, stała długość
+48.   Omów standard Unicode i metody kodowania znaków Unicode.
+Unicode to zbiór znaków przypisujący każdemu symbolowi na świecie unikalny numer.
+Do zapisu tych numerów wykorzystuje się metody kodowania UTF w pamięci komputera a najpopularniejszy to UTF-8 (od 1 do 4 bajtów), UTF-16 (od 2 do 4 bajtów) oraz UTF-32 (4 bajty)
+Punkty kodowania – zapisane w formacie szesnastkowym numer każdego znaku ze standardu Unicode
+49.   Cele i metody minimalizacji funkcji logicznych w układach cyfrowych.
+Celem jest znalezienie najprostszego możliwego zapisu danej funkcji co przekłada się na redukcje kosztów (mniej bramek logicznych)
+zwiększoną szybkość
+mniejszy pobór mocy
+większa niezawodność.
+Metoda algebraiczna – przekształcenie za pomocą twierdzeń i praw algebry Boole’a
+Metoda Karnaugha (graficzna) – Funkcja przedstawiona w postaci siatki i łączenie sąsiadów w grupy
+50.   Omówić modele obliczeń równoległych.
+PRAM  (równoległy z pamięcią wspólną) – wiele procesorów, każdy z własną pamięcią lokalną, ale wszystkie mają też dostęp do pamięci wspólnej co umożliwia szybką komunikację.
+Poszczególne procesory mogą wykonywać równe programy
+Model Sieciowy  – dwukierunkowe połączenie wielu procesorów. Wymiana danych polega na wymianie komunikatów
+Piorytet 3
+51.   Techniki tunelowania połączeń w sieciach komputerowych.
+Tunelowanie to enkapsulacja czyli zapakowanie protokołów do innego. Stosuje się to dla bezpieczeństwa, omijania zapory sieciowej, kompatybilności.
+Np. VPN, Tunelowanie SSH
+52.   Szyfry podstawieniowe i przestawieniowe – porównanie właściwości.
+Podstawieniowy – zastępuje znak innym znakiem np. szyfr cezara, podatny na złamanie
+Przestawieniowy – oryginalne litery ale pomieszana kolejność, np. szyfr kolumnowy
+Często łączy się ta 2 podejścia dla bezpieczeństwa.
+53.   Porównanie symetrycznych systemów kryptograficznych i systemów klucza publicznego.
+System symetryczny: ten sam klucz do szyfrowania i deszyfrowania, szybkie działanie
+System klucza: Asymetryczne, 2 klucze prywatny i publiczny, wolne działanie, niska wydajność przy dużych plikach
+54.   Opisać wybraną metodę optymalizacji statycznej.
+Metoda największego spadku to gradientowy algorytm optymalizacji statycznej (zmienne nie zależą od czasu), który szuka minimum funkcji celu poprzez systematyczne przesuwanie parametrów w kierunku przeciwnym do wektora gradientu (wskazuje kierunek najszybszego wzrostu).
+Wykorzystywana w uczeniu sieci neuronowych.
+55.   Przedstawić wybraną metodę optymalizacji dynamicznej.
+Optymalizacja Bellmana – to technika optymalizacji procesów wieloetapowych (decyzyjnych), która opiera się na Zasada optymalności Bellmana.
+Optymalne rozwiązanie problemu składa się z optymalnych rozwiązań jego pod problemów
+Wykorzystuje się ją do np. uczenia maszynowego.
+56.   Metody optymalizacji wielokryterialnej.
+Jednoczesne szukanie optymalnego rozwiązania dla kilku, często sprzecznych celów.
+Metoda idealnego punktu to sprowadzenie problemu wielokryterialnego do jednokryterialnego, gdzie szuka się punktu najbliższego optimum dla każdego kryterium wg wybranej miary.
+Metoda sumy ważonej - polega na przypisaniu każdemu kryterium określonej wagi, która określa, jak bardzo zależy nam na danym celu.
+57.   Na czym polega i jaka jest rola reguły 1/5 sukcesu w algorytmach ewolucyjnych.
+Dynamiczna zmiana siły mutacji w trakcie działania algorytmu. Jeśli więcej niż 1/5 mutacji tworzy lepsze potomki to zmniejszamy dokładność aby przyspieszyć a jeśli mniej to zwiększamy precyzje.
+Wprowadza balans w przeszukiwaniu.
+58.   Jaką rolę w rozwiązywaniu problemów odgrywają algorytmy aproksymacyjne. Podaj przykłady algorytmów aproksymacyjnych.
+Szybkie rozwiązanie problemu których rozwiązanie zajęło by lata. Zakładamy współczynnik o ile rozwiązanie może być gorsze niż optimum (np. 2 razy)
+Przykład: Problem Komiwojażera, Problem plecakowy (spakowanie do plecaka przedmiotów o określonej wadze i wartości tak, aby zmaksymalizować ich łączną wartość, nie przekraczając przy tym maksymalnej nośności)
+59.   Omów cztery wybrane programy, które można wykorzystać do pracy zdalnej w informatyce.
+Microsoft Teams - Komunikacja w zespole, chat, wideokonferencje
+Jira  – organizacja, zarządzanie w zadaniami, raporty
+GitHub  – wersjonowanie kodu, praca w zespole programistów
+Aplikacja Pulpit Zdalny  – przejęcie kontroli nad komputerem np. w firmie
+60.   Twierdzenie Shannona o kodowaniu źródła – sformułowanie, optymalizacja kodu, wydajność kodowa i podstawowe kody.
+Twierdzenie o bezstratności kompresji, mówi ono, że średnia długość słowa kodowego nie może być mniejsza niż entropia (miara nieokreśloności) źródła
+Optymalizacja: przypisuje się krótkie bity częstym symbolom
+Wydajność: entropia przez średnia długość słowa
+Podstawy: np. Shannona-Fano podział prawdopodobieństw od góry
+61.   Charakterystyka zasobów informatycznych.
+Zasoby czyli dane kluczowe do funkcjonowania przedsiębiorstwa:
+Struktura (format danych np. JSON)
+Typ danych (np. numeryczne)
+Rozmiar (w bajtach)
+Źródło (baza danych, aplikacja)
+Dokładność
+Aktualność
+Powiązanie z innymi danymi
+Bezpieczeństwo (stopień chronienia danych)
+62.   Jakość systemu informatycznego.
+Określa stopień w jakim system spełnia zdefiniowane wymagania funkcjonalne i poza funkcjonalne. Czynniki wpływające na jakość systemu:
+Bezpieczeństwo
+Wydajność
+Niezawodność
+Skalowalność
+63.   Metody analizy obwodów prądu stałego.
+Prawo Kirchhoffa  – dwa prawa które umożliwiają ustalenie wartości i kierunków prądów w obwodzie.
+Pierwsze prawo – suma plusów i minusów jest równa 0, Drugie prawo = suma spadków jest równa sumie sił
+Metoda potencjałów węzłowych  – służy do znajdowania wartości napięcia w węzłach
+Metoda prądów oczkowych  - służy do znajdowania wartości prądu w oczkach
+64.   Metody analizy obwodów pobudzonych sygnałami harmonicznymi w stanie ustalonym.
+Najpopularniejszą metodą jest metoda amplitud zespolonych (tzw. Metoda symboliczna) polega na zamianie sinusoidalnych napięć i prądów liczbami zespolonymi dzięki temu można korzystać z np.
+praw Kirchhoffa.
+65.   Metody analizy stanów nieustalonych w obwodach liniowych.
+Stan nieustalony – obwód przechodzi z jednego stanu ustalonego w drugi.
+Metoda klasyczna – ułożenie równań różniczkowych wynikających z prawa Kirchhoffa w dziedzinie czasu
+Metoda Laplace’a – wykonujemy transformaty Laplace’a
+66. Omówić wybrane metody cyfrowego pomiaru napięcia stałego.
+Napięcie mierzymy za pomocą woltomierza, który musi zamienić sygnał analogowy na wartość dyskretną realizuje się to za pomocą przetworników A/C (Analogowo cyfrowych)
+Metoda podwójnego całkowania – ładuje kondensator i mierzy czas rozładowania.
+Metoda kompresji wagowej – zgaduje, opiera się na porównywaniu bit po bicie ze wzorcami
+67.   Opisać działanie wzmacniacza nieodwracającego. Przedstawić wzór na wzmocnienie napięciowe tego układu wykorzystując rezystory w tym układzie.
+Działanie: zwiększone zostaje napięcie sygnału nie odwracając fazy (zmiany + na -). Kontrolowane jest to przez pętle ujemnego sprzężenia zwrotnego
+Wzór: Ku = 1+ R2/R1, gdzie R1/R2 - Rezystory
+68.   Omówić architekturę mikrokontrolera.
+Kompletny system mikrokomputerowy zamknięty w jednym układzie scalonym.
+Składa się z: CPU, Pamięci, Portów We/Wy, Układy peryferyjne (np. Timer), Interfejs komunikacyjny(UART)
+Typy architektury: Harwardzka(oddzielne magistrale dla pamięci programu i danych), von Neumanna (wspólna pamięć)
+69.   Charakterystyka interfejsu SPI w mikrokontrolerze.
+Synchroniczny, szeregowy interfejs komunikacyjny działający w trybie full-duplex (odbiera i nadaje na raz).
+Służy do szybkiej wymiany danych na krótkim dystansie. Opiera się na architekturę Master-Slave z 4 liniami sygnałowymi.
+70.   Charakterystyka interfejsu UART w mikrokontrolerze.
+Asynchroniczny i szeregowy interfejs komunikacji. Komunikuje się punkt-punkt czyli bezpośrednio 2 urządzenia.
+Zazwyczaj działa w trybie full-dupleks (jednocześnie nadaje i odbiera). Nie ma linii zegarowej, dlatego oba urządzenia musza mieć taką sama prędkość transmisji tylko 2 linie TX(nadająca) i RX(odbierająca).
+71.   Wykorzystując charakterystyki elementu, przedstawić zakresy pracy tranzystora polowego.
+Przedstawić zastosowania układowe tranzystora, w których te zakresy są wykorzystywane.
+Tranzystor polowy (np. MOSFET) sterowany napięciem. Zakresy:
+Zakres odcięcia – zbyt małe napięcie, stan wyłączony w przełącznikach oraz stan zera logicznego
+Zakres liniowy – napięcie odpowiednio wysokie, Stan włączony w przełącznikach, zachowuje się jak rezystor którego opór można regulować.
+Zakres nasycenia – przekroczenie pewnej wartości napięcia, stała wartość na wyjściu, wzmacniacz np. Audio, źródło prądowe
+72.   Rozwinąć skróty CAD i CAM oraz wskazać możliwości i potencjalne zastosowania każdej z metodologii.
+CAD (Computer Aided Design)  – Projektowanie wspomagane komputerowo, tworzenie projektów 2D i 3D na przykład projekt części statku.
+Program AutoCAD
+CAM (Computer Aided Manufacturing)  – Wytwarzanie wspomagane komputerowo, wykorzystanie oprogramowania do sterowania maszynami np. CNC. Program Fusion 360
+73.   Czym jest cyfrowe prototypownie, gdzie znajduje zastosowanie i jakie płyną korzyści z jego zastosowania?
+Cyfrowe prototypowanie to proces tworzenia wirtualnych modeli i testowania ich zachowania w programie komputerowym przed fizyczną produkcją,
+Stosowany np. w motoryzacji.
+Pozwala to na wczesne wykrycie błędów konstrukcyjnych, znaczne zmniejszenie kosztów oraz skrócenie czasu wprowadzania produktu na rynek.
+74.   Wymagania stawiane układom regulacji. Metody badania stabilności i oceny jakości sterowania.
+Wymagania : Stabilność, Dokładność, Szybkość działania, odpowiednie tłumienie
+Badanie stabilności:  badanie biegunów (układ jest stabilny, jeśli wszystkie bieguny mają ujemną część rzeczywistą), częstotliwościowe np.
+Nyquista analizując wykresy charakterystyki amplitudowo-fazowej.
+Ocena jakości : najczęściej na podstawie odpowiedzi skokowej czyli reakcji układu na nagłe włącznie.
+75. Definicja i kryteria klasyfikacji robotów.
+Roboty – Zaawansowane urządzenia mechaniczno-elektryczne zaprogramowane do automatycznego wykonywania zadań. Klasyfikacja:
+Budowa i funkcjonalność: Nanoroboty
+Jednostka kinetyczna: Roboty modularne
+Zastosowanie: roboty przemysłowe
+76.   Charakterystyka systemu Tetra (Terrestrial Trunked Radio).
+TETRA – cyfrowy standard profesjonalnej łączności radiowej, zaprojektowany dla służb.
+Posiada: System trankingowy (automatycznie przydziela częstotliwości), błyskawiczne połączenie, szyfrowanie na ścieżce.
+Działa w 2 trybach TMO (tryb sieciowy, za pośrednictwem anten) i DMO (Tryb bezpośredni czyli bezpośrednio ze sobą), Technologia TDMA częstotliwość dzieli się w czasie dzięki czemu mieści się więcej kanałów.
+77.   Charakterystyka systemu DMR (Digital Mobile Radio).
+DMR (Digital Mobile Radio) – standard cyfrowej łączności radiowej. Posiada: TDMA(częstotliwość dzieli się w czasie dzięki czemu mieści się więcej kanałów),  3 poziomy standardu 1-mała moc, proste zastosowania, 2-zwiększony zasięg, 3- system trankingowy(dynamicznie przydziela częstotliwość)
+78.   Układy zasilania bezprzewodowego typu WPT.
+WTP(Wireless Power Transfer) – zbiór technologii pozwalających na bezprzewodowe przesyłanie energii elektrycznej. Główne technologie:
+Sprzężenie indukcyjne – prąd zmienny w cewce nadawczej generuje pole magnetyczne które może odebrać cewka odbiorcza np. w telefonie.
+Rezonans magnetyczny – cewki są dostrojone specjalną częstotliwością rezonansową przez co mogą ładować wile urządzeń jednocześnie i na nieco dalszy dystans
+79.   Układ pozycjonowania przestrzennego GALILEO.
+GALILEO – System nawigacji satelitarnej stworzony przez unie europejską jako alternatywa dla amerykańskiego GPS.
+Zalety: wysoka dokładność, kompatybilność: działa z GPS jednocześnie.
+80. Rodzaje i parametry włókien światłowodowych stosowanych w sieciach światłowodowych.
+1. Włókna jednomodowe – jeden cienki rdzeń, światło biegnie jedną ścieżką, stosowane do transmisji na duże odległości, droższe w instalacji
+2. Włókna wielomodowe – znacznie grubszy rdzeń, światło rozdziela się na wiele fal, stosuje się na krótszych dystansach.
+Parametry: Średnica rdzenia, Dyspersja (poszerzenie światła podczas podróży),Tłumienie (Spadek mocy sygnału)
+81. Scharakteryzować wybrany sposób lutowania automatycznego.
+Lutowanie na fali – zautomatyzowany proces lutowania na masową skalę głownie elementów przewlekanych THT
+Proces taśmowy podzielony na 4 etapy:
+Nałożenie topnika (oczyszcza pola lutownicze)
+Podgrzewanie wstępne
+Lutowanie – płytka przejeżdża przez wannę ze stopem lutowniczym, który nakłada przylega do odsłoniętych punktów lutowniczych
+Chłodzenie
+82. Omówić etapy montażu elementów elektronicznych na płytkach drukowanych.
+Montaż powierzchniowy SMT:
+Naniesienie pasty lutowniczej – za pomocą szablonu
+Układamy elementy
+Lutowanie rozpływowe – w piecu pasta lutownicza topi się tworząc trwałe połączenia
+Automatyczna inspekcja
+Montaż przewlekany THT
+Przygotowanie i osadzenie elementów
+Lutowanie na fali – płytka przesuwa się pod falą płynnego lutowia które wypełnia otwory
+Wspólne: Chłodzenie, mycie z topnika, testy
+83. Przedstawić budowę i koncepcje pracy wybranego oscyloskopu.
+Oscyloskop służy do badania kształtu sygnału elektrycznego.
+Oscyloskop Cyfrowy – zamienia sygnał na ciąg wartości liczbowych, zapisuje je, przetwarza i wyświetla
+Budowa – układ wejściowy, przetwornik analogowo-cyfrowy, pamięć, wkład wyzwalania i procesor przetwarzający sygnał
+    </script>
+
     <script>
-        let cardsData = [
-            { q: "Omów cztery wybrane programy, które można wykorzystać do pracy zdalnej w informatyce.", a: "<ul><li>Microsoft Teams – komunikacja w zespole</li><li>Jira – organizacja, zarządzanie zadaniami</li><li>GitHub – wersjonowanie kodu, współpraca nad nim</li><li>Pulpit zdalny – przejęcie kontrole nad innym komputerem przez sieć</li></ul>", difficult: false },
-            { q: "Wyjaśnij różnicę między emulacją a wirtualizacją oprogramowania i podaj przykłady.", a: "<strong>Wirtualizacja</strong> polega na wydzieleniu fizycznych zasobów komputera i przypisaniu ich do odizolowanego środowiska np. Oracle VM, Vmware.<br><br><strong>Emulacja</strong> naśladowanie działania fizycznego sprzętu np. BlueStacks (Android na PC).", difficult: false },
-            { q: "Omówić protokół HTTP.", a: "Protokół warstwy aplikacji działający w modelu klient-serwer (żądanie-odpowiedź), który stanowi fundament komunikacji w sieci WWW oraz definiuje jak informacje (tekst, obrazy) są przesyłane między komputerami.<br><br>Opiera się na metodach: GET (pobranie), POST (wysłanie), PUT/PATCH (aktualizacja), DELETE (usuwa).", difficult: false },
-            { q: "Omówić protokół MQTT.", a: "Lekki protokół (niewielkie obciążenie sieci) warstwy aplikacji działający w modelu publikacja-subskrypcja (za pośrednictwem brokera), standard komunikacji w IoT gdzie informacje z np. czujników są przesyłane między urządzeniami.", difficult: false },
-            { q: "Omówić technologię ASP.NET.", a: "Framework webowy stworzony przez Microsoft Corporation. Służy do budowania nowoczesnych aplikacji internetowych i interfejsów API. Opera się głównie na języku C#.", difficult: false },
-            { q: "Wymień trzy wybrane modele cyklu życia systemu i wskaż specyfikę przedsięwzięć dla których dany model należy zastosować.", a: "<ul><li><strong>Model kaskadowy</strong> (sztywne ramy) - przebiega liniowo faza po fazie, każdy etap musi być zakończony przed przejściem do następnego. Powrót jest trudny i kosztowny.</li><li><strong>Model spiralny</strong> (drogich i ryzykownych) - nacisk na analizę ryzyka. Projekt rozwija się w iteracjach, oceniane jest ryzyko, budowane prototypy i weryfikowana.</li><li><strong>Model zwinny</strong> (innowacyjnych i komercyjnych) – praca podzielona na krótkie cykle po których klient otrzymuje nie pełny fragment aplikacji i dostosowuje na bieżąco kierunek rozwoju.</li></ul>", difficult: false },
-            { q: "Wymień role występujące w podejściu SCRUM oraz wskaż główne odpowiedzialności każdej roli.", a: "<ul><li><strong>Product Owner</strong> – Skupia się na tym CO ma być wytworzone aby przyniosło największą wartość na rynku. Reprezentuje biznes.</li><li><strong>Scrum Master</strong> - Skupia się na tym, JAK zespół pracuje, dbając o płynność działań i zgodność z metodyką Scrum.</li><li><strong>Development Team</strong> - Odpowiadają za dostarczenie w każdym Sprincie gotowego przyrostu produktu o wysokiej jakości, samodzielnie planując sposób wykonania zadań.</li></ul>", difficult: false },
-            { q: "Wyjaśnij różnicę pomiędzy weryfikacją wymagań a walidacją wymagań.", a: "<strong>Weryfikacja</strong> sprawdza zgodność produktu ze specyfikacją techniczną i dokumentacją („czy budujemy produkt właściwie?”).<br><br><strong>Walidacja</strong> sprawdza, czy gotowy produkt spełnia rzeczywiste potrzeby i oczekiwania klienta („czy budujemy właściwy produkt?”).", difficult: false },
-            { q: "Wskaż kiedy warto zastosować prototypowanie podczas analizy i projektowania systemu. Jakie są wady i zalety takiego podejścia?", a: "Prototypowanie – proces tworzenia wczesnego uproszczonego modelu oprogramowania, który służy do przetestowania założeń.<br><br><strong>Kiedy:</strong> niejasne wymagania, skomplikowany interfejs, trudność w komunikacji.<br><strong>Zalety:</strong> wczesna walidacja, ograniczenie ryzyka, poprawa jakości.<br><strong>Wady:</strong> Czas i koszty początkowe, złudzenie gotowego produktu.", difficult: false },
-            { q: "Charakterystyka zasobów informatycznych.", a: "Zbiór elementów fizycznych (zasoby sprzętowe i sieciowe), logicznych (zasoby programowe, dane) oraz ludzkich (zespół inżynierów, deweloperów).<br><br>Charakteryzuje się Poufnością (dostęp tylko dla uprawnionych), Integralnością (brak nieautoryzowanych modyfikacji) i Dostępnością (ciągła gotowość systemu).", difficult: false },
-            { q: "Jakość systemu informatycznego.", a: "Określa stopień, w jakim system spełnia zdefiniowane wymagania funkcjonalne i poza funkcjonalne. Kluczowe cechy jakości to niezawodność, wydajność, bezpieczeństwo, użyteczność oraz łatwość konserwacji.", difficult: false },
-            { q: "Modele e-biznesu i ich charakterystyka.", a: "<ul><li><strong>B2B</strong> (Business-to-Business) to transakcje między firmami.</li><li><strong>B2C</strong> (Business-to-Consumer) to sprzedaż detaliczna klientowi końcowemu.</li><li><strong>C2C</strong> (Consumer-to-Consumer) obejmuje wymianę handlową między konsumentami, np. na portalach aukcyjnych.</li></ul>", difficult: false },
-            { q: "Metody i narzędzia e-marketingu.", a: "<strong>Metody:</strong><br>- SEO – pozycjonowanie strony w przeglądarce<br>- Kampanie reklamowe<br>- Wysyłanie spersonalizowanych maili<br><br><strong>Narzędzia:</strong><br>- Platformy reklamowe np. Google Ads<br>- Narzędzia analityczne – analizujące ruch na stronie np. Google Analytics", difficult: false },
-            { q: "Czym różni się programowanie niskopoziomowe od wysokopoziomowego?", a: "Zasadnicza różnica polega na stopniu abstrakcji, programowanie niskopoziomowe polega na bezpośrednim zarządzaniu pamięcią i rejestrami procesora natomiast wysokopoziomowe opiera się na silnej abstrakcji, automatycznie zarządza pamięcią, składnia jest zbliżona do ludzkiego języka.", difficult: false },
-            { q: "Omówić cele i sposoby uruchamiania aplikacji w trybie krokowym (tzw. trybie debugowania).", a: "Kontrolowane wykonywanie programu (krok po kroku) służy do dynamicznej analizy i pozwala zobaczyć np. wartość zmiennej w konkretnym momencie.<br><br>W Visual Studio realizuje się ja za pomocą breakpoints oraz Step Over, Step Into, Step Out.", difficult: false },
-            { q: "Budowanie aplikacji WWW w architekturze MVC.", a: "Wzorzec dzielący aplikację na Model (logika biznesowa i dane), Widok (warstwa prezentacji/interfejs) i Kontroler (obsługa żądań użytkownika).<br><br>Ułatwia to separację kodu, testowanie jednostkowe oraz równoległą pracę programistów nad różnymi częściami systemu.", difficult: false },
-            { q: "Frameworki wspomagające tworzenie aplikacji WWW w technologiach Java.", a: "<ul><li><strong>Spring Boot</strong> – najpopularniejszy framework JAVA, posiada wbudowany serwer WWW i pozwala szybko tworzyć mikroserwisy i REST API.</li><li><strong>Jakarta EE</strong> – zbiór rygorystycznych specyfikacji korporacyjnych który wykorzystuje serwlety i JSF (framowork MVC), działających na zewnętrznych serwerach.</li></ul>", difficult: false },
-            { q: "Selektory: proste, uniwersalne, „potomka”, „dziecka”, „rodzeństwa”, pseudoklasy, pseudoelementy.", a: "Selektory CSS to podstawa języka arkuszy stylów, służąca do precyzyjnego identyfikowania styli z elementali.<br><ul><li>Uniwersalne – „*” wszystkie elementy np. * { margin: 0; }</li><li>Proste – typu (p), klasy (.kropka), id (#)</li><li>Potomka - gdziekolwiek wewnątrz div p { }</li><li>Dziecka – bezpośrednio wewnątrz div > p { }</li><li>Rodzeństwo – zaraz za h1 + p { }</li><li>Pseudoklasy - konkretny stan np. :hover</li><li>Pseudoelementy – wstawki ::after</li></ul>", difficult: false },
-            { q: "DOM: współpraca z przeglądarką i dostęp do elementów witryny.", a: "DOM to obiektowa reprezentacja strony wygenerowana przez silnik przeglądarki w postaci odwróconego drzewa, który składa się z węzłów na których można wykonać operacje.<br><br>Obiekt <strong>window</strong> jest globalnym kontekstem przeglądarki, a <strong>document</strong> reprezentuje strukturę HTML. Obiekty <strong>history</strong> i <strong>location</strong> pozwalają sterować historią sesji i adresem URL, umożliwiając skryptom JS dynamiczną interakcję z witryną.", difficult: false },
-            { q: "Omówić rodzaje chmur obliczeniowych oraz ich zalety i wady.", a: "<ul><li><strong>Publiczna:</strong> zasoby należą do zewn. dostawcy. Zalety: Natychmiastowa skalowalność. Wady: Mniejsza kontrola.</li><li><strong>Prywatna:</strong> infrastruktura dedykowana. Zalety: Pełna kontrola, wysoka wydajność. Wady: Duże koszty początkowe, skalowalność.</li><li><strong>Hybrydowa:</strong> szyfrowane połączenie obu. Zalety: Optymalizacja bezpieczeństwa i kosztów. Wady: skomplikowana architektura.</li></ul>", difficult: false },
-            { q: "Słuchacze w aplikacjach mobilnych.", a: "Słuchacze to interfejsy w systemie Android służące do asynchronicznej obsługi zdarzeń interfejsu użytkownika, takich jak kliknięcia czy gesty.<br><br>Po zarejestrowaniu słuchacza na danym widoku (np. przycisku), system automatycznie wywołuje zdefiniowaną w nim metodę w reakcji na wystąpienie określonej akcji.", difficult: false },
-            { q: "Rola intencji w aplikacjach mobilnych.", a: "Intencje to mechanizm komunikacji w systemie Android służący do uruchamiania innych komponentów aplikacji (np. nowych ekranów) i przekazywania im danych.<br><br>Dzielą się na intencje jawne, które uruchamiają konkretną klasę, oraz niejawne, które zlecają systemowi wykonanie ogólnej akcji, jak np. otwarcie mapy czy wysłanie wiadomości SMS.", difficult: false },
-            { q: "Twierdzenie Shannona o kodowaniu źródła.", a: "Twierdzenie o bezstratności kompresji, mówi ono, że średnia długość słowa kodowego nie może być mniejsza niż entropia (miara nieokreśloności) źródła.<br><br>- <strong>Optymalizacja:</strong> przypisuje się krótkie bity częstym symbolom.<br>- <strong>Wydajność:</strong> entropia przez średnia długość słowa.<br>- <strong>Podstawy:</strong> np. Shannona-Fano podział prawdopodobieństw od góry.", difficult: false },
-            { q: "Kodowanie według principiów podanych przez Huffmana.", a: "Algorytm bezstratnej kompresji, polega na budowaniu drzewa binarnego od dołu (łącząc najrzadsze symbole) co pozwala przypisać najkrótsze ciągi bitów najczęściej występującym znakom.", difficult: false },
-            { q: "Na czym polega rekurencja (rekursja)?", a: "Funkcja odwołuje się do samej siebie w celu rozwiązania mniejszego problemu tego samego typu.<br><br>Przykład to silnia n! = n(n-1)! z warunkiem że n !=0.", difficult: false },
-            { q: "Wymień przykłady algorytmów sortowania o złożoności O(n2), O(nlogn) i O(n).", a: "<ul><li><strong>O(n2)</strong> – Sortowanie bąbelkowe.</li><li><strong>O(nlogn)</strong> – Sortowanie przez scalanie (opiera się na zasadzie dziel i zwyciężaj, dzieli tablice na pojedyncze elementy i je scala w całość. Gwarantuje optymalny czas kosztem pamięci).</li><li><strong>O(n)</strong> – Wyszukiwanie liniowe (przejście przez całą pętle aż znajdzie wartoś np. maksymalną).</li></ul>", difficult: false },
-            { q: "Omów standard Unicode i metody kodowania znaków Unicode.", a: "Unicode to zbiór znaków przypisujący każdemu symbolowi na świecie unikalny numer.<br><br>Do zapisu tych numerów wykorzystuje się metody kodowania UTF w pamięci komputera a najpopularnijszy to UTF-8 (od 1 do 4 bajtów), UTF-16 (od 2 do 4 bajtów).", difficult: false },
-            { q: "Opisać wybraną metodę optymalizacji statycznej.", a: "<strong>Metoda największego spadku</strong> to gradientowy algorytm optymalizacji statycznej, który szuka minimum funkcji celu poprzez systematyczne przesuwanie parametrów w kierunku przeciwnym do wektora gradientu (wskazuje kierunek najszybszego wzrostu). Wykorzystywana w uczeniu sieci neuronowych.", difficult: false },
-            { q: "Przedstawić wybraną metodę optymalizacji dynamicznej.", a: "<strong>Optymalizacja Bellmana</strong> – to technika optymalizacji procesów wieloetapowych (decyzyjnych), która opiera się na Zasadzie Optymalności: każda pod-ścieżka ścieżki optymalnej musi być również optymalna. Wykorzystuje się ją do np. uczenia maszynowego.", difficult: false },
-            { q: "Optymalizacja wielokryterialna", a: "Szukanie kompromisu między sprzecznymi celami (np. cena vs jakość). Kluczowe jest Optimum Pareto (nie da się poprawić jednego bez psucia drugiego).<br><br>Metody to np. metoda wagowa (mnożenie celów przez ich ważność) lub punktu idealnego (szukanie rozwiązania najbliższego ideałowi).", difficult: false },
-            { q: "Porównanie struktur danych: stosu, kolejki oraz kolejki priorytetowej.", a: "<ul><li><strong>Stos</strong> – LIFO (ostatni wchodzi pierwszy wychodzi), zastosowanie rekurencja.</li><li><strong>Kolejka</strong> – FIFO (pierwszy wchodzi pierwszy wychodzi), zastosowanie kolejka wydruku.</li><li><strong>Priorytet</strong> – Waga (priorytet), reaguje na ważność danych.</li></ul>", difficult: false },
-            { q: "Drzewa poszukiwań binarnych – charakterystyka i sposoby implementacji.", a: "Hierarchiczna struktura, gdzie lewy potomek jest mniejszy a prawy większy od rodzica. Sposoby implementacji: tablicowe w kopcach i wskaźnikowe np. w JAVA.", difficult: false },
-            { q: "Grafy – charakterystyka, rodzaje i sposoby implementacji.", a: "<strong>Graf</strong> – zbiór wierzchołków połączonych krawędziami.<br><strong>Rodzaje:</strong> Skierowane, nieskierowane, ważone (koszt na krawędziach).<br><strong>Implementacja:</strong> Macierz sąsiedztwa, Lista sąsiedztwa.", difficult: false },
-            { q: "Algorytmy sortowania o złożoności logarytmicznej. Przykłady, istota.", a: "Algorytmy o złożoności logarytmicznej są dla dużych zbiorów danych.<br><strong>Istota:</strong> działają na zasadzie dziel i zwyciężaj, podział problemu na mniejsze części i ich wydajne łączenie.<br><strong>Przykłady:</strong> Sortowanie przez scalanie, quick sort.", difficult: false },
-            { q: "Kopce i ich rola w usprawnieniu przetwarzania. Algorytm sortowania kopcowego.", a: "<strong>Kopiec</strong> – drzewo binarne, gdzie rodzic jest zawsze większy lub mniejszy od dziecka.<br><strong>Rola:</strong> Błyskawiczny dostęp do najmniejszego/największego elementu (kluczowe dla np. koleje prio).<br><strong>Algorytm:</strong> Najpierw buduje kopiec, a potem sukcesywnie wyciąga ze szczytu największy element i kładzie go na koniec tablicy.", difficult: false },
-            { q: "Omówić istotę rekursji.", a: "Funkcja woła samą siebie, by rozwiązać mniejszy kawałek tego samego problemu. Konieczność zdeklarowania warunków brzegowych. Przykład silnia. Rekursja to rekurencja.", difficult: false },
-            { q: "Omówić istotę dziedziczenia.", a: "Fundament programowania obiektowego, polega na tworzeniu nowych klas na bazie istniejących. Służy do wykorzystywania już raz napisanego kodu zgodnie z dobrną praktyką czystego kodu Don't Repeat Yourself.", difficult: false },
-            { q: "Omówić istotę polimorfizmu metod.", a: "Ta sama nazwa metody wykonuje różne akcje w zależności od obiektu.<br>Dzieli się na 2 typu:<br>- Statyczna – ta sama metoda tylko inne argumenty,<br>- Dynamiczna – klasa pochodna nadpisuje metodę odziedziczoną po klasie bazowej.", difficult: false },
-            { q: "Podać zapis wybranego algorytmu ewolucyjnego oraz scharakteryzować jego poszczególne składowe funkcjonalne.", a: "<strong>Algorytm genetyczny</strong> – metoda optymalizacji inspirowana ewolucją.<br><strong>Zapis:</strong> Inicjacja populacji -> Funkcja przystosowania -> Pętla (Selekcja->Krzyżowanie->Mutacja->Funkcja przystosowania->Sukcesja)->Zwrócenie najlepszego.<br><ul><li>Funkcja przystosowania – ocenia rozwiązanie.</li><li>Selekcja – np. ruletka wybiera najlepsze.</li><li>Krzyżowanie – szukanie lepszych kombinacji.</li><li>Mutacja – losowa zamiana, unikanie minimum lokalnego.</li></ul>", difficult: false },
-            { q: "Na czym polega i jaka jest rola reguły 1/5 sukcesu w algorytmach ewolucyjnych.", a: "Dynamiczna zmiana siły mutacji w trakcie działania algorytmu. Jeśli więcej niż 1/5 mutacji tworzy lepsze potomki to zmniejszamy dokładność aby przyspieszyć a jeśli mniej to zwiększamy precyzje. Wprowadza balans w przeszukiwaniu.", difficult: false },
-            { q: "Jaką rolę w rozwiązywaniu problemów odgrywają algorytmy aproksymacyjne.", a: "Szybkie rozwiązanie problemu których rozwiązanie zajęło by lata. Zakładamy współczynnik o ile rozwiązanie może być gorsze niż optimum (np. 2 razy).<br><strong>Przykład:</strong> Problem Komiwojażera, Problem plecakowy.", difficult: false },
-            { q: "Zarządzanie pamięcią operacyjną - porównanie segmentacji z stronicowaniem.", a: "<strong>Stronicowanie</strong> (Podział sprzętowy) – podział pamięci fizycznej na bloki o równej, z góry określonej wielkości zwane ramkami (a pamięci logicznej na strony).<br><br><strong>Segmentacja</strong> (Podział logiczny) – dzielimy dane na bloki o zmiennej wielkości, wynikające z naturalnej struktury programu (np. osobny segment na kod, osobny na dane). Bloki te nazywamy segmentami.", difficult: false },
-            { q: "Algorytmy szeregowania zadań", a: "<ul><li>Kto pierwszy ten lepszy - blokuje krótkie zadania.</li><li>Najkrótsze zadanie pierwsze - najkrótszy czas oczekiwania ale możliwość zagłodzenia.</li><li>Rotacyjnie – każde zadanie dostaje równy czas, możliwość straty mocy.</li></ul>", difficult: false },
-            { q: "Porównanie technik przewidywania i unikania zakleszczeń.", a: "Zakleszczenie to krytyczny błąd systemu gdzie dwa lub więcej procesów czeka na zwolnienie zasobów w nieskończoność.<br><br><strong>Zapobieganie:</strong> Polega na narzuceniu systemowi sztywnych reguł, 100% bezpieczeństwa ale możliwość marnowania zasobów.<br><strong>Unikanie:</strong> System na bieżąco analizuje i przewiduje skutki, lepsze wykorzystanie sprzętu, ale obciążony procesor.", difficult: false },
-            { q: "Porównanie modeli sieciowych ISO/OSI i TCP/IP.", a: "<strong>ISO/OSI</strong> – 7 warstw (aplikacji, prezentacji, sesji, transportu, sieci, łącza danych, fizyczna), model teoretyczny, precyzyjny opis sieci.<br><br><strong>TCP/IP</strong> – 4 warstwy (aplikacji, transportu, internetowa, dostępu do sieci), model praktyczny, jest uproszczony i skupia się na konkretnych protokołach komunikacyjnych IP, TCP.", difficult: false },
-            { q: "Architektura wybranej usługi w sieci TCP/IP.", a: "<strong>Usługa DNS (Domain Name System)</strong> – działa w warstwie aplikacji w modelu TCP/IP. Służy do tłumaczenia nazw domenowych (np. www.google.pl) na adresy IP (np. 192.168.0.1).", difficult: false },
-            { q: "Porównanie protokołu IPv4 z IPv6.", a: "<strong>Protokół IPv4</strong> – 32 bity, zapis dziesiętny, zmienna długość.<br><strong>Protokół IPv6</strong> – 128 bitów, zapis szesnastkowy, stała długość. IPv6 powstało ponieważ wykorzystano pule adresów IPv4.", difficult: false },
-            { q: "Omówić techniki uwierzytelniania w systemach operacyjnych Unix i Windows.", a: "<strong>Unix:</strong> lokalne uwierzytelnianie w pliku /etc/shadow dane tam są haszowane.<br><strong>Windows:</strong> domowe – trzymane lokalnie za haszowane, firmowe – Active Directory (Kontroler Domeny, daje dostęp tylko zdeklarowanym w niej kontom).", difficult: false },
-            { q: "Techniki tunelowania połączeń w sieciach komputerowych.", a: "Tunelowanie to enkapsulacja czyli zapakowanie protokołów do innego. Stosuje się to dla bezpieczeństwa, omijania zapory sieciowej, kompatybilności. Np. VPN, Tunelowanie SSH.", difficult: false },
-            { q: "Szyfry podstawieniowe i przestawieniowe – porównanie właściwości.", a: "<strong>Podstawieniowy</strong> – zastępuje znak innym znakiem np. szyfr cezara, podatny na złamanie.<br><strong>Przestawieniowy</strong> – oryginalne litery ale pomieszana kolejność, np. szyfr kolumnowy. Często łączy się ta 2 podejścia dla bezpieczeństwa.", difficult: false },
-            { q: "Porównanie symetrycznych systemów kryptograficznych i systemów klucza publicznego.", a: "<strong>System symetryczny:</strong> ten sam klucz do szyfrowania i deszyfrowania, szybkie działanie.<br><strong>System klucza:</strong> Asymetryczne, 2 klucze prywatny i publiczny, wolne działanie, niska wydajność przy dużych plikach.", difficult: false },
-            { q: "Na czym polega normalizacja w relacyjnych bazach danych. Dlaczego jest ważna?", a: "Normalizacja to proces projektowania struktury relacyjnej bazy danych, polegający na podziale dużych tabel na mniejsze i łączeniu ich za pomocą relacji w celu usunięcia redundancji (powielania danych). Ich celem jest zapobieganie anomalii (czyli spowodować że dane będą niepoprawne).", difficult: false },
-            { q: "Opisać relacyjny model danych.", a: "Dane są przechowywane w relacyjnych dwuwymiarowych tabelach składających się z atrybutów (kolumn) i krotek (wierszy), tabele są połączone relacją za pomocą klucza podstawowego (identyfikuje rekord) i klucza obcego (powiązanie do wiersza w tabeli związanej relacją). Standardem komunikacji jest język SQL.", difficult: false },
-            { q: "Omówić język programowania SQL.", a: "Język zapytań używany do zarządzania, manipulowania i pobierania danych z relacyjnych baz danych. Podstawowymi komendami w nim są CREATE, ALTER, DROP, SELECT, INSERT, UPDATE, DELETE. Kluczowy dla baz danych takich jak MySQL, PostrgeSQL.", difficult: false },
-            { q: "Cechy map bitowych", a: "Bit mapa – grafika rastrowa, obraz zapisany w 2 wymiarowej siatce pikseli. Cechy: Budowa z pikseli , brak skalowalności, Realizm, Duża waga plików. Format np. PNG.", difficult: false },
-            { q: "Charakterystyka obiektów prymitywnych w grafice wektorowej.", a: "Podstawowe, niepodzielne elementy budujące grafiki wektorowe np. odcinki, wielokąty, krzywe czy tekst. Charakteryzują się tym że są opisane za pomocą równań matematycznych. Cechy: nieskończona skalowalność bez utraty jakości, nie zajmują dużo miejsca na dysku. Format np. SVG.", difficult: false },
-            { q: "Modele „sprzętowe” barwy w grafice komputerowe.", a: "Modele wynikają z fizyki urządzeń.<br><strong>Model RGB</strong> (RED, GREEN, BLUE) – model wykorzystywany przez monitory.<br><strong>Model CMYK</strong> (Cyan, Magenta, Yellow, Key) – model wykorzystywany przez drukarki.", difficult: false },
-            { q: "4. Metody analizy obwodów prądu stałego.", a: "Do podstawowych metod zalicza się wykorzystanie praw Kirchhoffa (prądowego i napięciowego) oraz prawa Ohma do układania bezpośrednich równań obwodu. W bardziej złożonych układach stosuje się metodę potencjałów węzłowych, prądów oczkowych oraz twierdzenia Thevenina i Nortona.", difficult: false },
-            { q: "5. Metody analizy obwodów pobudzonych sygnałami harmonicznymi w stanie ustalonym.", a: "Wykorzystuje się metodę symboliczną (liczb zespolonych), w której sygnały czasowe zastępuje się fazorami, a elementy R, L, C odpowiednią impedancją. Pozwala to na stosowanie standardowych praw prądu stałego (np. praw Kirchhoffa) do obliczeń w dziedzinie liczb zespolonych.", difficult: false },
-            { q: "6. Metody analizy stanów nieustalonych w obwodach liniowych.", a: "<strong>Metoda klasyczna</strong> polega na rozwiązywaniu równań różniczkowych opisujących obwód z uwzględnieniem praw komutacji i warunków początkowych.<br><strong>Metoda operatorowa</strong> wykorzystuje przekształcenie Laplace'a do zamiany skomplikowanych równań różniczkowych na znacznie prostsze w rozwiązaniu równania algebraiczne.", difficult: false },
-            { q: "14. Porównanie architektury procesorów CISC i RISC.", a: "<strong>CISC</strong> posiada bogaty zestaw złożonych instrukcji o zmiennej długości, z których jedna potrafi wykonać kilka operacji, ale jej realizacja zajmuje wiele cykli zegara.<br><strong>RISC</strong> opiera się na zredukowanym zestawie prostych instrukcji wykonujących się zazwyczaj w jednym cyklu, co poprawia efektywność i energooszczędność.", difficult: false },
-            { q: "25. Omówić architekturę mikrokontrolera.", a: "Mikrokontroler to zintegrowany system zawierający w jednym układzie scalonym procesor (CPU), pamięć (RAM oraz ROM/Flash) oraz rozbudowane układy wejścia/wyjścia (timery, ADC). Zazwyczaj opiera się na architekturze harwardzkiej, posiadając całkowicie oddzielne magistrale dla danych oraz pamięci programu.", difficult: false },
-            { q: "26. Charakterystyka interfejsu SPI w mikrokontrolerze.", a: "SPI to bardzo szybki, synchroniczny interfejs komunikacji szeregowej działający w trybie full-duplex, oparty na architekturze Master-Slave. Do transmisji wykorzystuje cztery linie sygnałowe: SCK (zegar), MOSI (dane do układu podrzędnego), MISO (dane do mastera) oraz CS (wybór układu podrzędnego).", difficult: false },
-            { q: "27. Charakterystyka interfejsu UART w mikrokontrolerze.", a: "UART to sprzętowy interfejs do asynchronicznej komunikacji szeregowej typu punkt-punkt, pracujący w trybie full-duplex. Ponieważ nie posiada linii zegarowej, używa tylko linii nadawczej (TX) i odbiorczej (RX), wymagając od obu urządzeń wcześniejszego ustalenia identycznej prędkości transmisji (Baud Rate).", difficult: false },
-            { q: "28. Charakterystyka systemu Tetra (Terrestrial Trunked Radio).", a: "TETRA to cyfrowy, trankingowy standard radiokomunikacji profesjonalnej, stworzony z myślą o służbach bezpieczeństwa publicznego i ratownictwie. Charakteryzuje się błyskawicznym zestawianiem połączeń, zaawansowaną obsługą komunikacji grupowej, silnym szyfrowaniem oraz możliwością pracy urządzeń bez stacji bazowej.", difficult: false },
-            { q: "29. Charakterystyka systemu DMR (Digital Mobile Radio).", a: "DMR to otwarty standard cyfrowej łączności radiowej, stanowiący nowoczesną, bardziej funkcjonalną alternatywę dla tradycyjnych systemów analogowych. Wykorzystuje technologię TDMA, dzieląc jeden kanał radiowy na dwie szczeliny czasowe, co pozwala na prowadzenie dwóch niezależnych rozmów na jednej częstotliwości.", difficult: false },
-            { q: "33. Rozwinąć skróty CAD i CAM oraz wskazać możliwości i potencjalne zastosowania.", a: "<strong>CAD</strong> (Computer Aided Design) to komputerowe wspomaganie projektowania, służące do tworzenia precyzyjnych modeli 2D i 3D w inżynierii oraz architekturze.<br><strong>CAM</strong> (Computer Aided Manufacturing) to komputerowe wspomaganie wytwarzania, które na podstawie modeli CAD automatycznie generuje instrukcje dla maszyn sterowanych numerycznie (CNC).", difficult: false },
-            { q: "34. Czym jest cyfrowe prototypownie, gdzie znajduje zastosowanie i jakie płyną korzyści z jego zastosowania?", a: "Cyfrowe prototypowanie to proces tworzenia wirtualnych modeli i testowania ich zachowania w programie komputerowym przed fizyczną produkcją, powszechny m.in. w motoryzacji. Pozwala to na wczesne wykrycie błędów konstrukcyjnych, znaczne zmniejszenie kosztów oraz skrócenie czasu wprowadzania produktu na rynek.", difficult: false },
-            { q: "38. Wymagania stawiane układom regulacji. Metody badania stabilności i oceny jakości sterowania.", a: "Główne wymagania stawiane układom to bezwzględne zapewnienie stabilności, odpowiednia dokładność w stanie ustalonym oraz szybkość działania. Stabilność bada się za pomocą kryteriów algebraicznych (np. Hurwitza) lub częstotliwościowych (Nyquista), a jakość sterowania ocenia się analizując uchyb oraz przeregulowanie.", difficult: false },
-            { q: "39. Definicja i kryteria klasyfikacji robotów.", a: "Robot to automatycznie sterowane, programowalne urządzenie wielocelowe posiadające zdolność manipulacji lub lokomocji, przeznaczone do wykonywania konkretnych zadań. Roboty klasyfikuje się najczęściej ze względu na ich zastosowanie (np. przemysłowe, medyczne) lub strukturę kinematyczną wyznaczającą przestrzeń roboczą (np. kartezjańskie, sferyczne, SCARA).", difficult: false },
-            { q: "62. Omówić wybrane metody cyfrowego pomiaru napięcia stałego.", a: "Cyfrowy pomiar realizuje się za pomocą przetworników analogowo-cyfrowych (ADC), np. z podwójnym całkowaniem, które charakteryzują się bardzo wysoką dokładnością i odpornością na zakłócenia sieciowe. Inną stosowaną metodą jest metoda kompensacyjna (aproksymacji sukcesywnej), która pozwala na znacznie szybsze wykonanie pomiaru.", difficult: false },
-            { q: "64. Scharakteryzować wybrany sposób lutowania automatycznego.", a: "Lutowanie na fali to wydajna technika stosowana do montażu elementów przewlekanych (THT), gdzie płytka z podzespołami przesuwa się nad pofalowaną powierzchnią płynnego spoiwa lutowniczego. Proces ten składa się z sekwencyjnych etapów: nałożenia topnika, wstępnego podgrzania, właściwego lutowania na fali cyny oraz chłodzenia.", difficult: false },
-            { q: "65. Omówić etapy montażu elementów elektronicznych na płytkach drukowanych.", a: "Przemysłowy montaż powierzchniowy (SMT) wymaga kolejno: nałożenia pasty lutowniczej przez sitodruk, automatycznego ułożenia podzespołów i ich przylutowania w piecu rozpływowym. Z kolei przy elementach przewlekanych (THT) i prototypowaniu stosuje się lutowanie ręczne, którego etapami są: odpowiednie nagrzanie i oczyszczenie grotu, nałożenie topnika, rozgrzanie padów oraz precyzyjne zaaplikowanie spoiwa (cyny).", difficult: false },
-            { q: "66. Układy zasilania bezprzewodowego typu WPT.", a: "WPT (Wireless Power Transfer) to technologia pozwalająca na przesył energii elektrycznej bez użycia tradycyjnych kabli, najczęściej z wykorzystaniem zjawiska indukcji elektromagnetycznej. Jej działanie opiera się na bliskim sprzężeniu magnetycznym między cewką nadajnika i odbiornika, z czym spotykamy się w standardzie ładowania Qi.", difficult: false },
-            { q: "67. Układ pozycjonowania przestrzennego GALILEO.", a: "GALILEO to europejski, globalny system nawigacji satelitarnej, zaprojektowany jako wysoce precyzyjna i przede wszystkim cywilna alternatywa dla amerykańskiego systemu wojskowego GPS. Zapewnia on Europie niezależność w zakresie pozycjonowania, pełną kontrolę nad infrastrukturą oraz kompatybilność z innymi systemami nawigacyjnymi.", difficult: false },
-            { q: "69. Rodzaje i parametry włókien światłowodowych stosowanych w sieciach światłowodowych.", a: "<strong>Włókna jednomodowe</strong> posiadają bardzo cienki rdzeń, transmitują tylko jedną wiązkę światła i pozwalają na przesył sygnału na ogromne odległości z minimalnym tłumieniem.<br><strong>Włókna wielomodowe</strong> mają szerszy rdzeń transportujący wiele modów światła, są tańsze w instalacji, ale stosuje się je głównie na krótkich dystansach (np. wewnątrz budynków).", difficult: false },
-            { q: "70. Cele i metody minimalizacji funkcji logicznych w układach cyfrowych.", a: "Głównym celem minimalizacji jest maksymalne uproszczenie wyrażenia logicznego, co pozwala na budowę układu z mniejszej liczby bramek, obniżając tym samym koszty, czas propagacji i zużycie energii. Stosuje się do tego graficzne tablice Karnaugha (optymalne dla małej liczby zmiennych) lub algorytmiczną metodę Quine'a-McCluskeya.", difficult: false },
-            { q: "72. Wykorzystując charakterystyki elementu, przedstawić zakresy pracy tranzystora polowego.", a: "Tranzystor polowy (np. MOSFET) może pracować w trzech głównych zakresach: odcięcia (nie przewodzi), liniowym (zachowuje się jak rezystor) oraz nasycenia (działa jak źródło prądowe). Stany odcięcia i nasycenia wykorzystuje się powszechnie w elektronice cyfrowej jako klucz przełączający, a zakres liniowy służy do budowy wzmacniaczy sygnałowych w układach analogowych.", difficult: false },
-            { q: "73. Opisać działanie wzmacniacza nieodwracającego. Przedstawić wzór na wzmocnienie napięciowe.", a: "Jest to podstawowy układ wykorzystujący wzmacniacz operacyjny, gdzie sygnał wejściowy wchodzi bezpośrednio na wejście nieodwracające (+), a wejście odwracające (-) objęte jest ujemnym sprzężeniem zwrotnym. Sygnał na wyjściu zachowuje fazę sygnału wejściowego, a wzmocnienie napięciowe układu określa wzór k = 1 + (Rf / Rin).", difficult: false }
-        ];
-
+        let cards = [];
+        let sessionCards = [];
         let currentIndex = 0;
-        let showOnlyDifficult = false;
-        let isFlipped = false;
+        let userStats = JSON.parse(localStorage.getItem('obronaStats')) || {};
 
-        function getActiveCards() {
-            return showOnlyDifficult ? cardsData.filter(c => c.difficult) : cardsData;
+        // Inteligentny parser uodporniony na błędy i tagi source
+        function parseData() {
+            const rawText = document.getElementById('rawData').textContent;
+            const lines = rawText.split('\n');
+            
+            let currentPriority = 1;
+            let currentQuestion = null;
+
+            for (let i = 0; i < lines.length; i++) {
+                // Usuwamy z tekstu "" oraz "" żeby kod się nie psuł
+                let line = lines[i].replace(/\[(?:source|cite):\s*\d+\]/gi, '').trim();
+                if (!line) continue;
+
+                if (line.toLowerCase().includes('priorytet 1')) { currentPriority = 1; continue; }
+                if (line.toLowerCase().includes('priorytet 2')) { currentPriority = 2; continue; }
+                if (line.toLowerCase().includes('priorytet 3') || line.toLowerCase().includes('piorytet 3')) { currentPriority = 3; continue; }
+                if (line.toLowerCase().includes('obrona pracy inżynierskiej')) continue;
+
+                // Sprawdzamy, czy linijka zaczyna się od numeru i kropki np. "1.", "12."
+                const qMatch = line.match(/^(\d+)\.\s*(.*)/);
+                
+                if (qMatch) {
+                    if (currentQuestion) {
+                        cards.push(currentQuestion);
+                    }
+                    currentQuestion = {
+                        id: parseInt(qMatch[1], 10), // Identyfikator to numer pytania z pliku
+                        priority: currentPriority,
+                        q: line,
+                        a: []
+                    };
+                } else if (currentQuestion) {
+                    currentQuestion.a.push(line);
+                }
+            }
+            // Dodajemy ostatnie pytanie
+            if (currentQuestion) {
+                cards.push(currentQuestion);
+            }
         }
 
-        function updateUI() {
-            const activeCards = getActiveCards();
-            const flashcardEl = document.getElementById("flashcard");
-            const frontEl = document.getElementById("cardFront");
-            const backEl = document.getElementById("cardBack");
-            const counterEl = document.getElementById("counterDisplay");
-            const checkbox = document.getElementById("difficultCheckbox");
+        function updateStatsUI() {
+            const container = document.getElementById('statsContainer');
+            container.innerHTML = '';
+            
+            const statsByPrio = {};
+            
+            cards.forEach(c => {
+                if (!statsByPrio[c.priority]) {
+                    statsByPrio[c.priority] = { k: 0, u: 0, total: 0 };
+                }
+                statsByPrio[c.priority].total++;
+                if (userStats[c.id] === 'known') statsByPrio[c.priority].k++;
+                if (userStats[c.id] === 'unknown') statsByPrio[c.priority].u++;
+            });
 
-            isFlipped = false;
-            flashcardEl.classList.remove("flipped");
+            // Wyświetlanie statystyk z posortowanymi priorytetami
+            Object.keys(statsByPrio).sort().forEach(prio => {
+                const p = statsByPrio[prio];
+                container.innerHTML += `
+                    <div class="stat-box">
+                        <h3>Priorytet ${prio}</h3>
+                        <p>Suma pytań: ${p.total}</p>
+                        <p class="text-green">Umiem: ${p.k}</p>
+                        <p class="text-red">Nie umiem: ${p.u}</p>
+                    </div>
+                `;
+            });
+        }
 
-            if (activeCards.length === 0) {
-                frontEl.innerHTML = "Brak pytań w tej kategorii.";
-                backEl.innerHTML = "Zmień tryb lub oznacz pytania jako trudne.";
-                counterEl.innerText = "0 / 0";
-                checkbox.disabled = true;
-                checkbox.checked = false;
+        // Tasowanie tablicy
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function startLearning() {
+            if (cards.length === 0) {
+                alert("Błąd: Nie udało się wczytać pytań. Sprawdź format danych.");
                 return;
             }
 
-            if (currentIndex >= activeCards.length) {
-                currentIndex = 0;
+            const prioSelect = document.getElementById('prioritySelect').value;
+            const onlyUnknown = document.getElementById('onlyUnknown').checked;
+
+            sessionCards = cards.filter(c => {
+                let matchPrio = (prioSelect === 'all') || (c.priority.toString() === prioSelect);
+                let matchStatus = onlyUnknown ? (userStats[c.id] !== 'known') : true;
+                return matchPrio && matchStatus;
+            });
+
+            if (sessionCards.length === 0) {
+                alert("Brak pytań spełniających podane kryteria! Prawdopodobnie potrafisz już wszystko z wybranego działu.");
+                return;
             }
 
-            const currentCard = activeCards[currentIndex];
-            
-            setTimeout(() => {
-                frontEl.innerHTML = currentCard.q;
-                backEl.innerHTML = currentCard.a;
-            }, 150);
+            shuffleArray(sessionCards);
+            currentIndex = 0;
 
-            counterEl.innerText = `${currentIndex + 1} / ${activeCards.length}`;
-            checkbox.disabled = false;
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('flashcardWrapper').style.display = 'block';
+            document.getElementById('actionButtons').style.display = 'flex';
+            document.getElementById('progressText').style.display = 'block';
+            document.getElementById('btnBackHome').style.display = 'block';
+
+            showCard();
+        }
+
+        function showCard() {
+            const flashcard = document.getElementById('flashcard');
+            flashcard.classList.remove('flipped');
             
-            const globalIndex = cardsData.indexOf(currentCard);
-            checkbox.checked = cardsData[globalIndex].difficult;
+            const currentCard = sessionCards[currentIndex];
+            document.getElementById('cardFront').innerHTML = `<h2>${currentCard.q}</h2>`;
+            document.getElementById('cardBack').innerHTML = currentCard.a.map(line => `<p>${line}</p>`).join('');
+            document.getElementById('progressText').innerText = `Pytanie ${currentIndex + 1} z ${sessionCards.length}`;
         }
 
         function flipCard() {
-            const activeCards = getActiveCards();
-            if (activeCards.length === 0) return;
+            document.getElementById('flashcard').classList.toggle('flipped');
+        }
+
+        function markCard(status, event) {
+            event.stopPropagation(); // Zapobiega obróceniu karty w momencie kliknięcia przycisku
+            const currentCardId = sessionCards[currentIndex].id;
             
-            isFlipped = !isFlipped;
-            const flashcardEl = document.getElementById("flashcard");
-            if (isFlipped) {
-                flashcardEl.classList.add("flipped");
+            // Zapis do local storage
+            userStats[currentCardId] = status;
+            localStorage.setItem('obronaStats', JSON.stringify(userStats));
+
+            currentIndex++;
+            if (currentIndex < sessionCards.length) {
+                showCard();
             } else {
-                flashcardEl.classList.remove("flipped");
+                alert("Koniec pytań na tę sesję! Gratulacje!");
+                goHome();
             }
         }
 
-        function nextCard() {
-            const activeCards = getActiveCards();
-            if (currentIndex < activeCards.length - 1) {
-                currentIndex++;
-                updateUI();
-            } else {
-                currentIndex = 0; 
-                updateUI();
+        function resetStats() {
+            if(confirm("Czy na pewno chcesz usunąć wszystkie postępy? Zostaną zresetowane znaczniki 'Umiem/Nie umiem'.")) {
+                userStats = {};
+                localStorage.removeItem('obronaStats');
+                updateStatsUI();
+                alert("Statystyki zostały zresetowane.");
             }
         }
 
-        function prevCard() {
-            const activeCards = getActiveCards();
-            if (currentIndex > 0) {
-                currentIndex--;
-                updateUI();
-            } else {
-                currentIndex = activeCards.length - 1; 
-                updateUI();
-            }
+        function goHome() {
+            document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('flashcardWrapper').style.display = 'none';
+            document.getElementById('actionButtons').style.display = 'none';
+            document.getElementById('progressText').style.display = 'none';
+            document.getElementById('btnBackHome').style.display = 'none';
+            updateStatsUI();
         }
 
-        function toggleDifficult() {
-            const activeCards = getActiveCards();
-            if (activeCards.length === 0) return;
-
-            const currentCard = activeCards[currentIndex];
-            const globalIndex = cardsData.indexOf(currentCard);
-            
-            cardsData[globalIndex].difficult = document.getElementById("difficultCheckbox").checked;
-
-            if (showOnlyDifficult && !cardsData[globalIndex].difficult) {
-                setTimeout(() => { updateUI(); }, 300); 
-            }
-        }
-
-        function toggleMode() {
-            showOnlyDifficult = !showOnlyDifficult;
-            currentIndex = 0; 
-            
-            const btn = document.getElementById("toggleModeBtn");
-            if (showOnlyDifficult) {
-                btn.innerText = "Tryb: Tylko oznaczone (Trudne)";
-                btn.classList.add("active-toggle");
-            } else {
-                btn.innerText = "Tryb: Wszystkie pytania";
-                btn.classList.remove("active-toggle");
-            }
-            
-            updateUI();
-        }
-
-        updateUI();
+        // Inicjalizacja przy starcie strony
+        parseData();
+        updateStatsUI();
     </script>
 </body>
 </html>
